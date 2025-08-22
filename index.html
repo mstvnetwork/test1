@@ -1,345 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pseudo Live Player with Dual Stream Support</title>
+  <meta charset="UTF-8">
+  <title>MSTV Embed Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Font Awesome for mute/unmute icon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: black;
+      background-color: #000;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
       height: 100%;
-      overflow: hidden;
     }
 
-    #videoContainer {
+    .embed-container {
       position: relative;
       width: 100%;
-      height: 100vh;
-      background: black;
-      overflow: hidden;
+      height: 0;
+      padding-bottom: 56.25%; /* 16:9 aspect ratio */
+      background-color: black;
     }
 
-    video, iframe {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .video-wrapper {
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 1;
+      width: 100%;
+      height: 100%;
     }
 
-    #videoPlaceholder {
-      position: absolute;
-      top: 0; left: 0;
+    #videoPlayer {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      z-index: 0;
-      background-color: black;
-      display: block;
     }
 
-    #loaderOverlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: gold;
-      font-family: sans-serif;
-      font-size: 1.2em;
-      z-index: 10;
-    }
-
-    #muteButton {
+    #muteToggle {
       position: absolute;
       top: 10px;
       right: 10px;
-      z-index: 11;
-      font-size: 1.5em;
-      padding: 8px;
       background: rgba(0, 0, 0, 0.5);
       color: white;
-      border: none;
+      font-size: 1.5em;
+      padding: 5px 10px;
       border-radius: 50%;
       cursor: pointer;
+      z-index: 10;
     }
 
-    #scrollBanner {
+    #liveStamp {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: #007BFF;
+      top: 10px;
+      left: 10px;
+      background-color: red;
       color: white;
-      font-family: sans-serif;
+      font-weight: bold;
+      padding: 5px 10px;
+      font-size: 0.9em;
+      border-radius: 5px;
+      z-index: 10;
+    }
+
+    #nowPlaying {
+      text-align: center;
       font-size: 1em;
-      overflow: hidden;
-      white-space: nowrap;
-      z-index: 11;
+      padding: 8px;
+      background-color: #111;
     }
 
-    #scrollText {
-      display: inline-block;
-      padding-left: 100%;
-      animation: scrollText 20s linear infinite;
-    }
-
-    @keyframes scrollText {
-      0% {
-        transform: translateX(0%);
-      }
-      100% {
-        transform: translateX(-100%);
-      }
+    #videoPlayer::-webkit-media-controls {
+      display: none !important;
     }
   </style>
 </head>
 <body>
-  <div id="videoContainer">
-    <div id="loaderOverlay">Offline Starts @ 03:00 PM IST</div>
-    <img id="videoPlaceholder" src="https://raw.githubusercontent.com/mstvnetwork/mstv6/refs/heads/main/Design-Studio-2025-08-22.png" alt="Placeholder" />
 
-    <!-- Custom Mute Button -->
-    <button id="muteButton">🔇</button>
-
-    <!-- Scrolling Banner -->
-    <div id="scrollBanner">
-      <div id="scrollText">Now Playing: "Title A" — Coming Up Next: "Title B"</div>
+  <div class="embed-container">
+    <div class="video-wrapper">
+      <video id="videoPlayer" autoplay muted playsinline></video>
+      <span id="muteToggle">🔈</span>
+      <div id="liveStamp">LIVE</div>
     </div>
   </div>
 
-  <!-- HLS.js for .m3u8 support -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <div id="nowPlaying">Loading...</div>
+
   <script>
-    let video = null;
-    let hls = null;
-    let channel = null;
-    let currentIndex = -1;
-    let currentUrl = '';
-    let seekTimeout = null;
+    const vp = document.getElementById('videoPlayer');
+    const now = document.getElementById('nowPlaying');
+    const mt = document.getElementById('muteToggle');
 
-    const container = document.getElementById('videoContainer');
-    const placeholder = document.getElementById('videoPlaceholder');
-    const loader = document.getElementById('loaderOverlay');
-    const muteButton = document.getElementById('muteButton');
+    const playlist = [
+      { title: "Sitaare Jameen Par", url: "https://cdn3.einthusan.io/etv/content/D7ret.mp4.m3u8?e=1755882895&md5=QCX--0JZAYrf2PlgRJ7_8w", duration: 3600 },
+      { title: "Jurassic World", url: "https://dt53fg.cfglobalcdn.com/silverlight/secip/113295/133612/Nm-LGNBL3dj43BjQ6DmCGw/MTIwLjIxLjEyNi4yMzY=/1755883930/hls-vod-s0013/flv/api/files/videos/2025/08/01/1754015178xs22t.mp4.m3u8", duration: 300 }
+    ];
 
-    function getPlaybackPosition(channel) {
-      const total = channel.durations.reduce((a, b) => a + b, 0);
-      const now = Math.floor(Date.now() / 1000) % total;
-      let offset = 0;
-      for (let i = 0; i < channel.durations.length; i++) {
-        if (now < offset + channel.durations[i]) {
-          return { index: i, time: now - offset };
+    const total = playlist.reduce((a, b) => a + b.duration, 0);
+    let idx = -1;
+
+    function pos() {
+      const nowSec = Math.floor(Date.now() / 1000) % total;
+      let off = 0;
+      for (let i = 0; i < playlist.length; i++) {
+        if (nowSec < off + playlist[i].duration) {
+          return { index: i, time: nowSec - off };
         }
-        offset += channel.durations[i];
+        off += playlist[i].duration;
       }
       return { index: 0, time: 0 };
     }
 
-    function isRestrictedStream(url) {
-      return url.includes('einthusan.io') || url.includes('needsiframe=true');
+    function loadVideo(url, start, title) {
+      vp.src = url;
+      vp.currentTime = start;
+      vp.play().catch(console.warn);
+      now.textContent = `Now Playing: ${title}`;
     }
 
-    function updatePlaceholderVisibility() {
-      if (video && video.readyState >= 2 && !video.paused && !video.ended) {
-        placeholder.style.display = 'none';
-      } else {
-        placeholder.style.display = 'block';
+    function sync() {
+      const { index, time } = pos();
+      if (index !== idx) {
+        idx = index;
+        loadVideo(playlist[index].url, time, playlist[index].title);
+      }
+      if (Math.abs(vp.currentTime - time) > 2) {
+        vp.currentTime = time;
       }
     }
 
-    function resetVideo() {
-      // Remove existing video or iframe
-      const existingMedia = container.querySelector('video, iframe');
-      if (existingMedia) existingMedia.remove();
+    mt.addEventListener('click', () => {
+      vp.muted = !vp.muted;
+      mt.textContent = vp.muted ? '🔈' : '🔊';
+    });
 
-      const newVideo = document.createElement('video');
-      newVideo.id = 'videoPlayer';
-      newVideo.autoplay = true;
-      newVideo.playsInline = true;
-      newVideo.muted = true;
-      newVideo.controls = false;
-      newVideo.style.width = "100%";
-      newVideo.style.height = "100%";
-      newVideo.style.objectFit = "cover";
-      newVideo.style.position = "absolute";
-      newVideo.style.top = "0";
-      newVideo.style.left = "0";
-      newVideo.style.zIndex = "1";
-      container.appendChild(newVideo);
-
-      newVideo.addEventListener('play', updatePlaceholderVisibility);
-      newVideo.addEventListener('pause', updatePlaceholderVisibility);
-      newVideo.addEventListener('ended', updatePlaceholderVisibility);
-      newVideo.addEventListener('error', updatePlaceholderVisibility);
-      newVideo.addEventListener('loadeddata', updatePlaceholderVisibility);
-
-      attachSeekLock(newVideo);
-      video = newVideo;
-      return newVideo;
-    }
-
-    function loadStream(index, time) {
-      const url = channel.urls[index];
-      loader.style.display = 'flex';
-
-      if (hls) {
-        hls.destroy();
-        hls = null;
-      }
-
-      const isIframe = isRestrictedStream(url);
-
-      if (isIframe) {
-        // Remove existing video/iframe
-        const existing = container.querySelector('video, iframe');
-        if (existing) existing.remove();
-
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://www.livereacting.com/tools/mp4-player-embed?url=${encodeURIComponent(url)}&hidecontrols=1`;
-        iframe.allowFullscreen = true;
-        iframe.allow = "autoplay";
-        iframe.frameBorder = "0";
-        iframe.style.position = "absolute";
-        iframe.style.top = "0";
-        iframe.style.left = "0";
-        iframe.style.width = "100%";
-        iframe.style.height = "100%";
-        iframe.style.zIndex = "1";
-        iframe.style.pointerEvents = "none";
-        container.appendChild(iframe);
-
-        video = null; // no direct access to iframe media
-        loader.style.display = 'none';
-        placeholder.style.display = 'none';
-        return;
-      }
-
-      // Use HLS.js
-      video = resetVideo();
-      if (Hls.isSupported()) {
-        hls = new Hls();
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.currentTime = time;
-          video.play().catch(console.warn);
-          updatePlaceholderVisibility();
-        });
-        hls.on(Hls.Events.LEVEL_LOADED, () => {
-          loader.style.display = 'none';
-        });
-        hls.on(Hls.Events.ERROR, () => {
-          updatePlaceholderVisibility();
-        });
-      } else {
-        video.src = url;
-        video.onloadeddata = () => {
-          video.currentTime = time;
-          video.play().catch(console.warn);
-          loader.style.display = 'none';
-          updatePlaceholderVisibility();
-        };
-        video.onerror = updatePlaceholderVisibility;
-      }
-    }
-
-    async function fetchChannel() {
-      try {
-        const response = await fetch('/channel.json?_=' + Date.now());
-        return await response.json();
-      } catch (err) {
-        console.error("Failed to fetch channel.json", err);
-        return null;
-      }
-    }
-
-    async function syncPlayback() {
-      const newChannel = await fetchChannel();
-      if (!newChannel || !newChannel.urls.length) return;
-
-      const { index, time } = getPlaybackPosition(newChannel);
-      const newUrl = newChannel.urls[index];
-
-      if (index !== currentIndex || newUrl !== currentUrl) {
-        currentIndex = index;
-        currentUrl = newUrl;
-        channel = newChannel;
-        loadStream(index, time);
-        updateBanner(index, newChannel);
-      } else if (video && Math.abs(video.currentTime - time) > 3) {
-        video.currentTime = time;
-      } else if (video && Math.abs(video.currentTime - time) > 3) {
-        video.currentTime = time;
-      }
-    }
-
-    function attachSeekLock(videoElement) {
-      videoElement.addEventListener('seeking', () => {
-        clearTimeout(seekTimeout);
-        if (!channel) return;
-
-        const { time: liveTime } = getPlaybackPosition(channel);
-        const currentTime = videoElement.currentTime;
-        const diff = currentTime - liveTime;
-
-        console.log(`⏱️ Seeking diff: ${diff.toFixed(2)}s`);
-
-        if (diff > 3) {
-          console.log('⏩ Too far ahead — snapping back to live');
-          videoElement.currentTime = liveTime;
-        } else if (diff < -3) {
-          console.log('⏪ Rewind detected — will return to live in 10s');
-          seekTimeout = setTimeout(() => {
-            console.log('🔁 Returning to live now');
-            videoElement.currentTime = getPlaybackPosition(channel).time;
-          }, 10000);
-        }
-      });
-    }
-
-    function updateBanner(currentIndex, channel) {
-      const scrollText = document.getElementById('scrollText');
-      const currentTitle = channel.titles?.[currentIndex] || `Video ${currentIndex + 1}`;
-      const nextTitle = channel.titles?.[currentIndex + 1] || "Stay tuned...";
-      scrollText.textContent = `Now Playing: "${currentTitle}" — Coming Up Next: "${nextTitle}"`;
-    }
-
-    function attachMuteButtonLogic() {
-      muteButton.textContent = '🔇';
-
-      muteButton.onclick = () => {
-        if (!video) {
-          alert("Mute toggle not supported on iframe player.");
-          return;
-        }
-
-        video.muted = !video.muted;
-        muteButton.textContent = video.muted ? '🔇' : '🔊';
-
-        if (!video.paused) {
-          video.play().catch(console.warn);
-        }
-
-        updatePlaceholderVisibility();
-      };
-    }
-
-    // Initial setup
-    attachMuteButtonLogic();
-    updatePlaceholderVisibility();
-
-    // Start sync loop every 5 seconds
-    (function loop() {
-      syncPlayback();
-      setTimeout(loop, 5000);
-    })();
+    sync();
+    setInterval(sync, 1000);
   </script>
+
 </body>
 </html>
