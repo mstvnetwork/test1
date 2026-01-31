@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>24/7 Broadcast Channel</title>
+<title>24/7 Live Channel</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
@@ -29,41 +29,27 @@ body {
 video {
     width: 100%;
     height: 100%;
-    pointer-events: none; /* disables clicking/pausing */
+    pointer-events: none;
 }
 
-/* Hide native controls */
 video::-webkit-media-controls {
     display: none !important;
 }
 
-/* Mute button */
-#mute-btn {
+#mute-btn, #fs-btn {
     position: absolute;
     top: 10px;
-    right: 10px;
-    font-size: 1.5rem;
-    cursor: pointer;
-    background: rgba(0,0,0,0.6);
     padding: 6px 12px;
+    background: rgba(0,0,0,0.6);
     border-radius: 20px;
     color: white;
+    cursor: pointer;
     z-index: 5;
+    font-size: 14px;
 }
 
-/* Fullscreen button */
-#fs-btn {
-    position: absolute;
-    top: 10px;
-    right: 70px;
-    font-size: 1.3rem;
-    cursor: pointer;
-    background: rgba(0,0,0,0.6);
-    padding: 6px 12px;
-    border-radius: 20px;
-    color: white;
-    z-index: 5;
-}
+#mute-btn { right: 10px; }
+#fs-btn { right: 70px; }
 </style>
 </head>
 
@@ -79,53 +65,66 @@ video::-webkit-media-controls {
 
 const streamUrl = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
 
-/* SET YOUR FIXED CHANNEL START TIME (UTC) */
-const CHANNEL_START = new Date("2026-02-01T00:00:00Z").getTime();
+/* Channel started 1 Jan 2026 UTC */
+const CHANNEL_START = new Date("2026-01-01T00:00:00Z").getTime();
 
 const video = document.getElementById("video");
 const muteBtn = document.getElementById("mute-btn");
 const fsBtn = document.getElementById("fs-btn");
 
 let videoDuration = 0;
-let serverOffset = 0;
-
-/* Get reliable UTC time */
-async function getServerTime() {
-    const res = await fetch("https://worldtimeapi.org/api/timezone/Etc/UTC");
-    const data = await res.json();
-    const serverNow = new Date(data.utc_datetime).getTime();
-    serverOffset = serverNow - Date.now();
-}
 
 function getChannelPosition() {
-    const now = Date.now() + serverOffset;
+    const now = Date.now();
     const elapsed = Math.floor((now - CHANNEL_START) / 1000);
+    if (videoDuration <= 0) return 0;
     return elapsed % Math.floor(videoDuration);
 }
 
 function initPlayer() {
+
     if (Hls.isSupported()) {
-        const hls = new Hls({ liveSyncDurationCount: 3 });
+
+        const hls = new Hls({
+            maxBufferLength: 30
+        });
+
         hls.loadSource(streamUrl);
         hls.attachMedia(video);
 
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
-            videoDuration = video.duration;
-            video.currentTime = getChannelPosition();
-            video.play().catch(()=>{});
+
+            video.addEventListener("loadedmetadata", function () {
+
+                videoDuration = video.duration;
+
+                const startPos = getChannelPosition();
+                video.currentTime = startPos;
+
+                video.play().catch(()=>{});
+
+            }, { once: true });
+
         });
 
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+
         video.src = streamUrl;
+
         video.addEventListener("loadedmetadata", function () {
+
             videoDuration = video.duration;
-            video.currentTime = getChannelPosition();
+
+            const startPos = getChannelPosition();
+            video.currentTime = startPos;
+
             video.play().catch(()=>{});
-        });
+
+        }, { once: true });
     }
 }
 
-/* Force resume if paused */
+/* Force continuous playback */
 video.addEventListener("pause", function () {
     video.play().catch(()=>{});
 });
@@ -148,18 +147,15 @@ muteBtn.addEventListener("click", function () {
 
 /* Fullscreen toggle */
 fsBtn.addEventListener("click", function () {
+    const wrapper = document.querySelector(".video-wrapper");
     if (!document.fullscreenElement) {
-        document.querySelector(".video-wrapper").requestFullscreen();
+        wrapper.requestFullscreen();
     } else {
         document.exitFullscreen();
     }
 });
 
-/* Start */
-window.onload = async function () {
-    await getServerTime();
-    initPlayer();
-};
+window.onload = initPlayer;
 
 </script>
 
