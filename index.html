@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pseudo Live Stream</title>
+    <title>Personal M3U8 Live Stream</title>
+    <!-- 1. HLS.js Library for M3U8 support on Chrome/Android -->
+    <script src="https://cdn.jsdelivr.net"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,8 +18,8 @@
             margin: 0;
         }
 
-        #video-container, #fallback-message {
-            display: none;
+        #video-container {
+            display: block;
         }
 
         .video-wrapper {
@@ -28,16 +30,15 @@
             overflow: hidden;
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            background: #111;
         }
 
-        iframe {
+        video {
             width: 100%;
             height: 100%;
-            border: none;
-            pointer-events: none;
+            background: #000;
         }
 
-        /* 🔊 Unmute/mute button */
         #unmute-button {
             position: absolute;
             top: 10px;
@@ -52,18 +53,13 @@
             transition: background 0.3s ease;
         }
 
-        #unmute-button:hover {
-            background: rgba(255,255,255,0.2);
-        }
-
-        /* 🔴 Updated scroll banner */
         .scroll-banner {
             position: absolute;
             bottom: 0;
             width: 100%;
-            background: #d00; /* Solid red */
-            color: #fff;       /* White text */
-            font-size: 1.2rem; /* Slightly larger */
+            background: #d00;
+            color: #fff;
+            font-size: 1.2rem;
             padding: 8px 0;
             white-space: nowrap;
             overflow: hidden;
@@ -86,129 +82,91 @@
 
     <div id="video-container">
         <div class="video-wrapper">
-            <div id="player"></div>
-            <!-- 🔊 Mute/Unmute Button -->
+            <!-- 📺 Native Video Element -->
+            <video id="video" playsinline muted></video>
+            
             <div id="unmute-button" title="Toggle Mute">🔇</div>
-            <!-- 🔴 Scroll Banner -->
+            
             <div class="scroll-banner">
-                <span>📺 This channel is compatible with Chrome based browsers to watch it uninterruptly use Chrome browser, stay tuned...!! </span>
+                <span>📺 Personal Channel Live: Your M3U8 stream is now active! </span>
             </div>
-        </div>
-    </div>
-
-    <div id="fallback-message">
-        <h2>⚠️ This livestream is only available in Google Chrome (desktop/Android) and Safari/Chrome on iOS.</h2>
-        <p>Please use one of these browsers to view the video.</p>
+        </div>ReferenceError: Hls is not defined
     </div>
 
     <script>
+        // 1. ADD YOUR M3U8 URLs HERE
         const playlist = [
-            { id: "VZejN68TMAA", duration: 5100 },
-            { id: "yMVlOd828VY", duration: 5841 },
-            { id: "tIvbmgUfeZ0", duration: 7976 },
-            { id: "p3dOoGk77jQ", duration: 5400 },
-            { id: "JtmCRZqWW5o", duration: 7976 }
+            { url: "http://playertest.longtailvideo.com", duration: 600 }, // Test Link
+            { url: "https://your-project.pages.dev", duration: 100 } // Your 2.12GB Movie (set duration in seconds)
         ];
 
+        // 2. Start time for Sync (everyone watches same part)
         const LIVE_START_TIME = new Date("2024-01-01T00:00:00Z").getTime();
 
-        let player;
-        let isUnmuted = false;
+        const video = document.getElementById('video');
+        const unmuteBtn = document.getElementById('unmute-button');
+        let hls;
 
-        function isAllowedBrowser() {
-            const ua = navigator.userAgent;
-            const isAndroid = /Android/i.test(ua);
-            const isIOS = /iPhone|iPad|iPod/i.test(ua);
-            const isDesktopChrome = /Chrome\/[.0-9]* Safari\/[.0-9]*$/.test(ua) && !/Edg|OPR|Brave|Vivaldi/i.test(ua);
-            const isChromeOnAndroid = isAndroid && /Chrome\/[.0-9]* Mobile/i.test(ua) && !/EdgA|OPR|Brave|SamsungBrowser/i.test(ua);
-            const isChromeOniOS = isIOS && /CriOS/i.test(ua);
-            const isSafariOniOS = isIOS && /Version\/[\d\.]+.*Safari/.test(ua);
-            return isDesktopChrome || isChromeOnAndroid || isChromeOniOS || isSafariOniOS;
-        }
+        function initPlayer() {
+            const playlistDuration = playlist.reduce((acc, vid) => acc + vid.duration, 0);
+            const totalElapsed = Math.max(0, Math.floor((Date.now() - LIVE_START_TIME) / 1000));
+            const currentPos = totalElapsed % playlistDuration;
 
-        function onYouTubeIframeAPIReady() {
-            if (!isAllowedBrowser()) {
-                document.getElementById("fallback-message").style.display = "block";
-                return;
-            }
-
-            document.getElementById("video-container").style.display = "block";
-
-            const playlistDuration = playlist.reduce((acc, video) => acc + video.duration, 0);
-            const totalElapsedSeconds = Math.max(0, Math.floor((Date.now() - LIVE_START_TIME) / 1000));
-            const currentPositionInLoop = totalElapsedSeconds % playlistDuration;
-
-            let cumulativeDuration = 0;
+            let cumulative = 0;
             let videoToPlay;
-            let startTime = 0;
+            let seekTime = 0;
 
             for (let i = 0; i < playlist.length; i++) {
-                const video = playlist[i];
-                if (currentPositionInLoop < cumulativeDuration + video.duration) {
-                    currentVideoIndex = i;
-                    videoToPlay = video;
-                    startTime = currentPositionInLoop - cumulativeDuration;
+                if (currentPos < cumulative + playlist[i].duration) {
+                    videoToPlay = playlist[i];
+                    seekTime = currentPos - cumulative;
                     break;
                 }
-                cumulativeDuration += video.duration;
+                cumulative += playlist[i].duration;
             }
 
-            if (!videoToPlay) {
-                currentVideoIndex = 0;
-                videoToPlay = playlist[0];
-            }
-
-            player = new YT.Player("player", {
-                videoId: videoToPlay.id,
-                playerVars: {
-                    autoplay: 1,
-                    mute: 1,
-                    controls: 0,
-                    disablekb: 1,
-                    modestbranding: 1,
-                    rel: 0,
-                    start: startTime,
-                    playsinline: 1
-                },
-                events: {
-                    onReady: (event) => {
-                        event.target.playVideo().catch(e => console.log("Play failed due to autoplay policy."));
-                    },
-                    onStateChange: (event) => {
-                        if (event.data === YT.PlayerState.ENDED) {
-                            currentVideoIndex = (currentVideoIndex + 1) % playlist.length;
-                            player.loadVideoById({ videoId: playlist[currentVideoIndex].id, startSeconds: 0 });
-                            if (isUnmuted) {
-                                player.unMute();
-                            }
-                        }
-                    },
-                    onError: (event) => {
-                        console.error("YouTube Player Error:", event.data);
-                    }
-                }
-            });
+            playM3U8(videoToPlay.url, seekTime);
         }
 
-        // 🔊 Mute/Unmute toggle
-        document.getElementById("unmute-button").addEventListener("click", () => {
-            if (!player) return;
+        function playM3U8(url, startTime) {
+            if (Hls.isSupported()) {
+                if (hls) hls.destroy();
+                hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.currentTime = startTime;
+                    video.play();
+                });
+            } 
+            // Support for Safari/iOS which play M3U8 natively
+            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.addEventListener('loadedmetadata', function() {
+                    video.currentTime = startTime;
+                    video.play();
+                });
+            }
+        }
 
-            if (isUnmuted) {
-                player.mute();
-                isUnmuted = false;
-                document.getElementById("unmute-button").textContent = "🔇";
+        // Handle Automatic Next Video
+        video.onended = function() {
+            initPlayer(); // Recalculate and play next
+        };
+
+        // 🔊 Mute/Unmute Toggle
+        unmuteBtn.addEventListener("click", () => {
+            if (video.muted) {
+                video.muted = false;
+                unmuteBtn.textContent = "🔊";
             } else {
-                player.unMute();
-                isUnmuted = true;
-                document.getElementById("unmute-button").textContent = "🔊";
+                video.muted = true;
+                unmuteBtn.textContent = "🔇";
             }
         });
 
-        // 📺 Load YouTube IFrame API
-        const tag = document.createElement("script");
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
+        // Initialize on load
+        window.onload = initPlayer;
     </script>
 </body>
 </html>
