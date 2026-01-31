@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Custom M3U8 Player</title>
+<title>24/7 Public Channel</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
@@ -33,15 +33,10 @@ video {
     background: #000;
 }
 
-/* Hide native controls */
 video::-webkit-media-controls {
     display: none !important;
 }
-video::-webkit-media-controls-enclosure {
-    display: none !important;
-}
 
-/* Play overlay */
 #play-overlay {
     position: absolute;
     inset: 0;
@@ -60,7 +55,6 @@ video::-webkit-media-controls-enclosure {
     pointer-events: none;
 }
 
-/* Mute button */
 #unmute-button {
     position: absolute;
     top: 10px;
@@ -86,57 +80,85 @@ video::-webkit-media-controls-enclosure {
 
 <script>
 
+const streamUrl = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+const CHANNEL_START = new Date("2024-01-01T00:00:00Z").getTime();
+
 const video = document.getElementById("video");
 const overlay = document.getElementById("play-overlay");
 const unmuteBtn = document.getElementById("unmute-button");
 
-// Working public HLS test stream
-const streamUrl = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+let videoDuration = 0;
+let serverOffset = 0;
 
-// Initialize player
+// Fetch reliable UTC time from public API
+async function getServerTime() {
+    const res = await fetch("https://worldtimeapi.org/api/timezone/Etc/UTC");
+    const data = await res.json();
+    const serverNow = new Date(data.utc_datetime).getTime();
+    serverOffset = serverNow - Date.now();
+}
+
+// Calculate correct channel position
+function getChannelPosition() {
+    const now = Date.now() + serverOffset;
+    const elapsed = Math.floor((now - CHANNEL_START) / 1000);
+    return elapsed % Math.floor(videoDuration);
+}
+
 function initPlayer() {
     if (Hls.isSupported()) {
         const hls = new Hls();
         hls.loadSource(streamUrl);
         hls.attachMedia(video);
+
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
+            videoDuration = video.duration;
+            video.currentTime = getChannelPosition();
             video.play();
         });
+
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = streamUrl;
-        video.play();
+        video.addEventListener("loadedmetadata", function () {
+            videoDuration = video.duration;
+            video.currentTime = getChannelPosition();
+            video.play();
+        });
     }
 }
 
-// Play / Pause toggle
-function togglePlay() {
-    if (video.paused) {
-        video.play();
-    } else {
-        video.pause();
+// Auto re-sync every 30 seconds
+setInterval(() => {
+    if (!video.paused && videoDuration > 0) {
+        const correctTime = getChannelPosition();
+        if (Math.abs(video.currentTime - correctTime) > 2) {
+            video.currentTime = correctTime;
+        }
     }
+}, 30000);
+
+// Play / Pause
+function togglePlay() {
+    if (video.paused) video.play();
+    else video.pause();
 }
 
 video.addEventListener("click", togglePlay);
 overlay.addEventListener("click", togglePlay);
 
-// Show / Hide overlay automatically
-video.addEventListener("play", function () {
-    overlay.classList.add("hidden");
-});
+video.addEventListener("play", () => overlay.classList.add("hidden"));
+video.addEventListener("pause", () => overlay.classList.remove("hidden"));
 
-video.addEventListener("pause", function () {
-    overlay.classList.remove("hidden");
-});
-
-// Mute toggle
 unmuteBtn.addEventListener("click", function () {
     video.muted = !video.muted;
     unmuteBtn.textContent = video.muted ? "🔇" : "🔊";
 });
 
-// Start player
-window.onload = initPlayer;
+// Start everything
+window.onload = async function () {
+    await getServerTime();
+    initPlayer();
+};
 
 </script>
 
