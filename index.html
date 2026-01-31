@@ -1,171 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Personal M3U8 Live Stream</title>
-    <!-- 1. HLS.js Library for M3U8 support on Chrome/Android -->
-    <script src="https://cdn.jsdelivr.net"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Personal M3U8 Player</title>
 
-        #video-container {
-            display: block;
-        }
+<!-- ✅ Correct HLS.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-        .video-wrapper {
-            position: relative;
-            width: 90vw;
-            max-width: 960px;
-            aspect-ratio: 16 / 9;
-            overflow: hidden;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            background: #111;
-        }
+<style>
+body {
+    margin: 0;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+}
 
-        video {
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
+.video-wrapper {
+    position: relative;
+    width: 90vw;
+    max-width: 960px;
+    aspect-ratio: 16/9;
+    background: #111;
+}
 
-        #unmute-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 1.8rem;
-            z-index: 5;
-            cursor: pointer;
-            background: rgba(0,0,0,0.5);
-            border-radius: 50%;
-            padding: 8px;
-            user-select: none;
-            transition: background 0.3s ease;
-        }
+video {
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
 
-        .scroll-banner {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            background: #d00;
-            color: #fff;
-            font-size: 1.2rem;
-            padding: 8px 0;
-            white-space: nowrap;
-            overflow: hidden;
-            z-index: 4;
-        }
-
-        .scroll-banner span {
-            display: inline-block;
-            padding-left: 100%;
-            animation: scroll-left 15s linear infinite;
-        }
-
-        @keyframes scroll-left {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
-        }
-    </style>
+#unmute-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.6rem;
+    cursor: pointer;
+    background: rgba(0,0,0,0.5);
+    padding: 6px;
+    border-radius: 50%;
+    color: white;
+}
+</style>
 </head>
+
 <body>
 
-    <div id="video-container">
-        <div class="video-wrapper">
-            <!-- 📺 Native Video Element -->
-            <video id="video" playsinline muted></video>
-            
-            <div id="unmute-button" title="Toggle Mute">🔇</div>
-            
-            <div class="scroll-banner">
-                <span>📺 Personal Channel Live: Your M3U8 stream is now active! </span>
-            </div>
-        </div>ReferenceError: Hls is not defined
-    </div>
+<div class="video-wrapper">
+    <video id="video" playsinline muted controls></video>
+    <div id="unmute-button">🔇</div>
+</div>
 
-    <script>
-        // 1. ADD YOUR M3U8 URLs HERE
-        const playlist = [
-            { url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", duration: 634 }
-        ];
+<script>
 
-        // 2. Start time for Sync (everyone watches same part)
-        const LIVE_START_TIME = new Date("2024-01-01T00:00:00Z").getTime();
+const video = document.getElementById("video");
+const unmuteBtn = document.getElementById("unmute-button");
 
-        const video = document.getElementById('video');
-        const unmuteBtn = document.getElementById('unmute-button');
-        let hls;
+// ✅ 20-second working HLS test stream
+const streamUrl = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
 
-        function initPlayer() {
-            const playlistDuration = playlist.reduce((acc, vid) => acc + vid.duration, 0);
-            const totalElapsed = Math.max(0, Math.floor((Date.now() - LIVE_START_TIME) / 1000));
-            const currentPos = totalElapsed % playlistDuration;
+function initPlayer() {
 
-            let cumulative = 0;
-            let videoToPlay;
-            let seekTime = 0;
-
-            for (let i = 0; i < playlist.length; i++) {
-                if (currentPos < cumulative + playlist[i].duration) {
-                    videoToPlay = playlist[i];
-                    seekTime = currentPos - cumulative;
-                    break;
-                }
-                cumulative += playlist[i].duration;
-            }
-
-            playM3U8(videoToPlay.url, seekTime);
-        }
-
-        function playM3U8(url, startTime) {
-            if (Hls.isSupported()) {
-                if (hls) hls.destroy();
-                hls = new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.currentTime = startTime;
-                    video.play();
-                });
-            } 
-            // Support for Safari/iOS which play M3U8 natively
-            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-                video.addEventListener('loadedmetadata', function() {
-                    video.currentTime = startTime;
-                    video.play();
-                });
-            }
-        }
-
-        // Handle Automatic Next Video
-        video.onended = function() {
-            initPlayer(); // Recalculate and play next
-        };
-
-        // 🔊 Mute/Unmute Toggle
-        unmuteBtn.addEventListener("click", () => {
-            if (video.muted) {
-                video.muted = false;
-                unmuteBtn.textContent = "🔊";
-            } else {
-                video.muted = true;
-                unmuteBtn.textContent = "🔇";
-            }
+    if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+            video.play();
         });
+    } 
+    else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = streamUrl;
+        video.play();
+    }
+}
 
-        // Initialize on load
-        window.onload = initPlayer;
-    </script>
+unmuteBtn.addEventListener("click", function () {
+    video.muted = !video.muted;
+    unmuteBtn.textContent = video.muted ? "🔇" : "🔊";
+});
+
+window.onload = initPlayer;
+
+</script>
+
 </body>
 </html>
