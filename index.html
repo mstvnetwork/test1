@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>24/7 Public Channel</title>
+<title>24/7 Broadcast Channel</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
@@ -23,46 +23,43 @@ body {
     width: 90vw;
     max-width: 960px;
     aspect-ratio: 16/9;
-    background: #111;
-    overflow: hidden;
+    background: #000;
 }
 
 video {
     width: 100%;
     height: 100%;
-    background: #000;
+    pointer-events: none; /* disables clicking/pausing */
 }
 
+/* Hide native controls */
 video::-webkit-media-controls {
     display: none !important;
 }
 
-#play-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 4rem;
-    color: white;
-    background: rgba(0,0,0,0.35);
-    cursor: pointer;
-    transition: opacity 0.3s ease;
-}
-
-#play-overlay.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-#unmute-button {
+/* Mute button */
+#mute-btn {
     position: absolute;
     top: 10px;
     right: 10px;
     font-size: 1.5rem;
     cursor: pointer;
-    background: rgba(0,0,0,0.5);
-    padding: 6px 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: white;
+    z-index: 5;
+}
+
+/* Fullscreen button */
+#fs-btn {
+    position: absolute;
+    top: 10px;
+    right: 70px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    background: rgba(0,0,0,0.6);
+    padding: 6px 12px;
     border-radius: 20px;
     color: white;
     z-index: 5;
@@ -73,24 +70,26 @@ video::-webkit-media-controls {
 <body>
 
 <div class="video-wrapper">
-    <video id="video" playsinline muted></video>
-    <div id="play-overlay">▶</div>
-    <div id="unmute-button">🔇</div>
+    <video id="video" playsinline muted autoplay></video>
+    <div id="fs-btn">⛶</div>
+    <div id="mute-btn">🔇</div>
 </div>
 
 <script>
 
 const streamUrl = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
-const CHANNEL_START = new Date("2024-01-01T00:00:00Z").getTime();
+
+/* SET YOUR FIXED CHANNEL START TIME (UTC) */
+const CHANNEL_START = new Date("2026-02-01T00:00:00Z").getTime();
 
 const video = document.getElementById("video");
-const overlay = document.getElementById("play-overlay");
-const unmuteBtn = document.getElementById("unmute-button");
+const muteBtn = document.getElementById("mute-btn");
+const fsBtn = document.getElementById("fs-btn");
 
 let videoDuration = 0;
 let serverOffset = 0;
 
-// Fetch reliable UTC time from public API
+/* Get reliable UTC time */
 async function getServerTime() {
     const res = await fetch("https://worldtimeapi.org/api/timezone/Etc/UTC");
     const data = await res.json();
@@ -98,7 +97,6 @@ async function getServerTime() {
     serverOffset = serverNow - Date.now();
 }
 
-// Calculate correct channel position
 function getChannelPosition() {
     const now = Date.now() + serverOffset;
     const elapsed = Math.floor((now - CHANNEL_START) / 1000);
@@ -107,14 +105,14 @@ function getChannelPosition() {
 
 function initPlayer() {
     if (Hls.isSupported()) {
-        const hls = new Hls();
+        const hls = new Hls({ liveSyncDurationCount: 3 });
         hls.loadSource(streamUrl);
         hls.attachMedia(video);
 
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
             videoDuration = video.duration;
             video.currentTime = getChannelPosition();
-            video.play();
+            video.play().catch(()=>{});
         });
 
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -122,39 +120,42 @@ function initPlayer() {
         video.addEventListener("loadedmetadata", function () {
             videoDuration = video.duration;
             video.currentTime = getChannelPosition();
-            video.play();
+            video.play().catch(()=>{});
         });
     }
 }
 
-// Auto re-sync every 30 seconds
-setInterval(() => {
-    if (!video.paused && videoDuration > 0) {
-        const correctTime = getChannelPosition();
-        if (Math.abs(video.currentTime - correctTime) > 2) {
-            video.currentTime = correctTime;
-        }
-    }
-}, 30000);
-
-// Play / Pause
-function togglePlay() {
-    if (video.paused) video.play();
-    else video.pause();
-}
-
-video.addEventListener("click", togglePlay);
-overlay.addEventListener("click", togglePlay);
-
-video.addEventListener("play", () => overlay.classList.add("hidden"));
-video.addEventListener("pause", () => overlay.classList.remove("hidden"));
-
-unmuteBtn.addEventListener("click", function () {
-    video.muted = !video.muted;
-    unmuteBtn.textContent = video.muted ? "🔇" : "🔊";
+/* Force resume if paused */
+video.addEventListener("pause", function () {
+    video.play().catch(()=>{});
 });
 
-// Start everything
+/* Auto resync every 20 seconds */
+setInterval(() => {
+    if (videoDuration > 0) {
+        const correct = getChannelPosition();
+        if (Math.abs(video.currentTime - correct) > 2) {
+            video.currentTime = correct;
+        }
+    }
+}, 20000);
+
+/* Mute toggle */
+muteBtn.addEventListener("click", function () {
+    video.muted = !video.muted;
+    muteBtn.textContent = video.muted ? "🔇" : "🔊";
+});
+
+/* Fullscreen toggle */
+fsBtn.addEventListener("click", function () {
+    if (!document.fullscreenElement) {
+        document.querySelector(".video-wrapper").requestFullscreen();
+    } else {
+        document.exitFullscreen();
+    }
+});
+
+/* Start */
 window.onload = async function () {
     await getServerTime();
     initPlayer();
