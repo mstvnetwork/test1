@@ -1,181 +1,161 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Channel Ribbon</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSTV Network | Premium DTH</title>
 
 <style>
-body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    background:#000;
-    color:#fff;
+* { box-sizing: border-box; transition: all 0.3s ease; }
+body { margin: 0; font-family: 'Poppins', sans-serif; color: #E0E0E0; background: #0F1115; overflow-x: hidden; }
+
+.title-3d { font-size: clamp(1.8rem, 4vw, 3.5rem); text-align: center; margin: 30px 0 10px; font-weight: 800; }
+.scrolling-news { background: #1A1D20; color: #90EE90; padding: 12px 0; border-top: 1px solid #333; border-bottom: 1px solid #333; margin-bottom: 20px; font-weight: 600; }
+.channel-heading { text-align: center; font-size: 14px; color: #90EE90; font-weight: 600; margin-bottom: 15px; }
+
+/* --- JITTER FIX: CSS SMOOTH SCROLL --- */
+.ribbon-wrapper { position: relative; max-width: 1000px; margin: 0 auto 30px; overflow: hidden; }
+
+.channel-ribbon { 
+    display: flex; 
+    width: max-content; 
+    gap: 15px; 
+    padding: 10px 5px 20px; 
+    /* linear ensures no stuttering or speed changes */
+    animation: smooth-loop 40s linear infinite; 
 }
 
-/* ===== Ribbon ===== */
-.ribbon-wrapper{
-    max-width:1000px;
-    margin:20px auto;
-    overflow:hidden;
-    position:relative;
+/* Pause on hover so selection is easy */
+.ribbon-wrapper:hover .channel-ribbon { animation-play-state: paused; }
+
+@keyframes smooth-loop {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); } 
 }
 
-.channel-ribbon{
-    overflow:hidden;
-    width:100%;
-}
+.logo-card { flex: 0 0 120px; background: #1A1D20; border: 1px solid #333; border-radius: 12px; padding: 10px; cursor: pointer; text-align: center; position: relative; }
+.logo-card.active { border-color: #90EE90; background: rgba(144,238,144,0.1); }
+.logo-card img { width: 100%; height: 50px; object-fit: contain; pointer-events: none; }
+.logo-card span { display: block; font-size: 10px; margin-top: 5px; color: #888; font-weight: 600; pointer-events: none; }
 
-.ribbon-track{
-    display:flex;
-    gap:15px;
-    padding:10px 5px 20px;
-    width:max-content;
-    will-change:transform;
-}
+/* Player Settings */
+#fullscreen-wrapper { position: relative; width: 95%; max-width: 1000px; margin: 0 auto 30px; background: #000; border-radius: 12px; overflow: hidden; }
+.player-container { position: relative; width: 100%; padding-top: 56.25%; }
+.player-container iframe, .player-container video, #placeholder-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border: none; }
 
-.logo-card{
-    background:#111;
-    border-radius:8px;
-    padding:10px;
-    text-align:center;
-    min-width:120px;
-    cursor:pointer;
-    transition:0.3s;
-}
+.loader-container { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:none; }
+.spinner { width:40px; height:40px; border:3px solid rgba(144,238,144,0.2); border-top:3px solid #90EE90; border-radius:50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
 
-.logo-card img{
-    width:100%;
-    height:60px;
-    object-fit:contain;
-}
-
-.logo-card span{
-    display:block;
-    margin-top:6px;
-    font-size:14px;
-}
-
-.logo-card.active{
-    background:#e50914;
-}
-
-.logo-card:hover{
-    background:#333;
-}
-
-.live-dot{
-    width:8px;
-    height:8px;
-    background:red;
-    border-radius:50%;
-    margin:0 auto 5px;
-}
-
-/* ===== Player ===== */
-.player-container{
-    max-width:1000px;
-    margin:20px auto;
-}
-
-iframe{
-    width:100%;
-    height:500px;
-    border:none;
-    background:#000;
-}
+footer { background:#000; color:#888; padding:40px 20px; text-align:center; }
 </style>
 </head>
 
 <body>
+<div class="title-3d">AAINA DTH FREE</div>
+<div class="scrolling-news"><marquee>Aaina DTH Free | Premium Streaming Quality</marquee></div>
+<div class="channel-heading">Select a Channel Below</div>
 
 <div class="ribbon-wrapper">
-    <div class="channel-ribbon">
-        <div class="ribbon-track" id="ribbon-track"></div>
+    <div class="channel-ribbon" id="logo-grid"></div>
+</div>
+
+<div id="fullscreen-wrapper">
+    <div class="player-container">
+        <!-- Sandbox to stop iframe redirects -->
+        <iframe id="media-player" style="display:none;" allow="autoplay; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"></iframe>
+        <video id="video-player" style="display:none;" playsinline controls></video>
+        <img id="placeholder-image" src="Design-Studio-2025-01-22 (1).png" alt="Select Channel">
+        <div class="loader-container" id="loader"><div class="spinner"></div></div>
     </div>
 </div>
 
-<div class="player-container">
-    <iframe id="videoFrame" allowfullscreen></iframe>
-</div>
+<footer><p>&copy; <span id="year"></span> MSTV Network</p></footer>
 
 <script>
+document.getElementById('year').textContent = new Date().getFullYear();
 
-/* ===== Channel Data ===== */
+const videoPlayer = document.getElementById('video-player'),
+      iframePlayer = document.getElementById('media-player'),
+      placeholder = document.getElementById('placeholder-image'),
+      loader = document.getElementById('loader'),
+      grid = document.getElementById('logo-grid');
+
+// SAME CHANNEL DATA
 const channelsData = [
-  { name:"Star Sports", url:"https://streamcrichd.com/update/star.php", type:"iframe", logo:"cb2f146ca360b682048f5cdb75f557ec.jpg" },
-  { name:"Bollywood Classic HD", url:"https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", type:"hls", logo:"wlo_logo_200_200.jpg" },
-  { name:"Zee Cinema", url:"https://freeways.hosthampster.com/zeecinema.html", type:"iframe", logo:"wlo_logo_200_200.jpg" }
-];
+      { name:"Star Sports", url:"https://streamcrichd.com/update/star.php", type:"iframe", logo:"cb2f146ca360b682048f5cdb75f557ec.jpg" },
+      { name:"Bollywood Classic", url:"https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", type:"hls", logo:"wlo_logo_200_200.jpg" },
+      { name:"Zee Cinema", url:"https://freeways.hosthampster.com/zeecinema.html", type:"iframe", logo:"wlo_logo_200_200.jpg" }
+    ];
 
+ 
 
-/* ===== Build Ribbon ===== */
-const ribbonTrack = document.getElementById("ribbon-track");
-const iframe = document.getElementById("videoFrame");
-
-function createCard(ch,index){
-    const card = document.createElement("div");
-    card.className="logo-card";
-    card.dataset.index=index;
-
-    card.innerHTML=`
-        <div class="live-dot"></div>
-        <img src="${ch.logo}">
-        <span>${ch.name}</span>
-    `;
-
-    card.addEventListener("click",function(){
-        document.querySelectorAll(".logo-card")
-            .forEach(c=>c.classList.remove("active"));
-
-        this.classList.add("active");
-
-        iframe.src = channelsData[index].url;
+// SETUP LOGO GRID (ORIGINAL + CLONE FOR SEAMLESS LOOP)
+function buildRibbon() {
+    const combined = [...channelsData, ...channelsData]; // Dublicate array once
+    combined.forEach((ch, index) => {
+        const card = document.createElement('div');
+        card.className = 'logo-card';
+        // We use the original index (modulo length) so clones point to original data
+        card.dataset.id = index % channelsData.length; 
+        card.innerHTML = `<img src="${ch.logo}"><span>${ch.name}</span>`;
+        
+        card.onclick = function() {
+            document.querySelectorAll('.logo-card').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            handleSelection(this.dataset.id);
+        };
+        grid.appendChild(card);
     });
+}
+buildRibbon();
 
-    return card;
+function stopAllPlayback(){
+    videoPlayer.pause();
+    videoPlayer.removeAttribute('src');
+    videoPlayer.load();
+    videoPlayer.style.display='none';
+    iframePlayer.src='';
+    iframePlayer.style.display='none';
 }
 
-/* Add original + clone */
-channelsData.forEach((ch,i)=>ribbonTrack.appendChild(createCard(ch,i)));
-channelsData.forEach((ch,i)=>ribbonTrack.appendChild(createCard(ch,i)));
+function handleSelection(dataId){
+    const channel = channelsData[dataId]; // Always pulls from original array
+    stopAllPlayback();
+    loader.style.display='flex';
+    placeholder.style.display='none';
 
-const originalWidth = ribbonTrack.scrollWidth / 2;
-
-/* ===== Infinite Auto Scroll (No Jitter) ===== */
-let position = 0;
-let speed = 0.5;
-let animationFrame;
-
-function animate(){
-    position += speed;
-
-    if(position >= originalWidth){
-        position -= originalWidth;
+    if(channel.type === 'hls'){
+        videoPlayer.style.display = 'block';
+        videoPlayer.src = channel.url; 
+        videoPlayer.play();
+        loader.style.display = 'none';
+    } else {
+        iframePlayer.style.display = 'block';
+        iframePlayer.src = channel.url;
+        iframePlayer.onload = () => loader.style.display = 'none';
     }
-
-    ribbonTrack.style.transform = `translateX(-${position}px)`;
-
-    animationFrame = requestAnimationFrame(animate);
 }
-
-function stopScroll(){
-    cancelAnimationFrame(animationFrame);
-}
-
-function startScroll(){
-    animationFrame = requestAnimationFrame(animate);
-}
-
-ribbonTrack.addEventListener("mouseenter",stopScroll);
-ribbonTrack.addEventListener("mouseleave",startScroll);
-
-startScroll();
-
-/* Load first channel by default */
-iframe.src = channelsData[0].url;
-document.querySelectorAll(".logo-card")[0].classList.add("active");
-
 </script>
-
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+const channelsData = [
+      { name:"Star Sports", url:"https://streamcrichd.com/update/star.php", type:"iframe", logo:"cb2f146ca360b682048f5cdb75f557ec.jpg" },
+      { name:"Bollywood Classic", url:"https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", type:"hls", logo:"wlo_logo_200_200.jpg" },
+      { name:"Zee Cinema", url:"https://freeways.hosthampster.com", type:"iframe", logo:"wlo_logo_200_200.jpg" }
+    ];
+
+ 
