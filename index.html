@@ -2,10 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>MSTV Network | Premium DTH</title>
-
 <style>
+    html, body {
+    width: 100%;
+    overflow-x: hidden; /* Removes horizontal scrollbar */
+    position: relative;
+    touch-action: pan-y; /* Disables horizontal panning and pinch-zoom gestures */
+}
+
 /* Base Styles */
 * { box-sizing: border-box; transition: background 0.3s ease; }
 body { margin: 0; font-family: 'Poppins', sans-serif; color: #E0E0E0; background: #0F1115; overflow-x: hidden; }
