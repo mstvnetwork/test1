@@ -101,6 +101,10 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
   border: none;
 }
 
+#placeholder-image {
+  display: block;
+}
+
 #blur-overlay {
   position: absolute;
   top: 8%;
@@ -133,7 +137,7 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 #player-message {
-  text-align: left;
+  text-align: center;   /* center aligned */
   color: #90EE90;
   font-weight: 600;
   font-size: 14px;
@@ -142,35 +146,31 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
   margin-top: 8px;      /* space below player */
   opacity: 0;
   transition: opacity 0.3s ease;
-  position: static;      /* normal flow so it appears under player */
+  position: static;
 }
 
-footer h4 {
-  color: #90EE90;     /* bright, matches ribbon/branding */
-  font-size: 18px;
-  margin-bottom: 12px;
-  font-weight: 700;
-}
-
-footer p {
-  color: #ccc;        /* brighter than #888 */
-  line-height: 1.6;
-  font-size: 14px;
-}
 footer {
   background: #0F1115;
-  border-top: 2px solid #90EE90;  /* thin accent line */
+  border-top: 2px solid #90EE90;
   padding: 60px 20px;
   text-align: center;
 }
-footer p span {
-  color: #90EE90;
-  font-weight: 600;
-}
+
 footer h4 {
+  color: #90EE90;
+  font-size: 18px;
+  margin-bottom: 12px;
+  font-weight: 700;
   text-shadow: 0 0 4px rgba(144,238,144,0.5);
 }
 
+footer p {
+  color: #ccc;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+footer p span { color:#90EE90; font-weight:600; }
 </style>
 </head>
 <body>
@@ -222,6 +222,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
 
 const videoPlayer = document.getElementById('video-player');
 const iframePlayer = document.getElementById('media-player');
+const placeholder = document.getElementById('placeholder-image');
 const grid = document.getElementById('logo-grid');
 const fsWrapper = document.getElementById('fullscreen-wrapper');
 const messageEl = document.getElementById('player-message');
@@ -324,17 +325,20 @@ document.addEventListener('fullscreenchange', updateMessageVisibility);
 function handleSelection(index){
   const channel = channelsData[index];
   currentChannelIndex = index;
+
   stopAllPlayback();
 
   document.querySelectorAll('.logo-card').forEach(c=>c.classList.remove('active'));
   if(grid.children[index]) grid.children[index].classList.add('active');
 
-  // set message text and hide initially
   messageEl.textContent = channel.message || '';
   messageEl.style.opacity = 0;
 
   blurOverlay.style.display = channel.showBadge ? 'block' : 'none';
   loader.style.display = 'flex';
+
+  // Hide placeholder when a channel is selected
+  placeholder.style.display = 'none';
 
   if(channel.type==='hls'){
     videoPlayer.style.display='block';
@@ -354,16 +358,22 @@ function handleSelection(index){
   } else {
     iframePlayer.style.display='block';
     iframePlayer.src = channel.url;
-
     const iframeTimeout = setTimeout(()=>loader.style.display='none',5000);
     iframePlayer.onload = ()=>{ clearTimeout(iframeTimeout); loader.style.display='none'; };
   }
 
-  // enter fullscreen
+  // fullscreen
   setTimeout(()=>{ if(!document.fullscreenElement) openFullscreen(); },300);
 
-  // immediately update message visibility
   updateMessageVisibility();
+}
+
+// SHOW PLACEHOLDER (if needed)
+function showPlaceholder(){
+  stopAllPlayback();
+  placeholder.style.display = 'block';
+  messageEl.style.opacity = 0;
+  blurOverlay.style.display = 'none';
 }
 
 // START AUTO SCROLL
@@ -371,4 +381,5 @@ startAutoScroll();
 </script>
 </body>
 </html>
+
 
