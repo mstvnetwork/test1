@@ -103,6 +103,11 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
 }
 
 #placeholder-image { display: block; }
+.placeholder-arrow {
+  font-size: 2.5rem; /* arrow size */
+  color: #90EE90;
+  margin-bottom: 15px;
+}
 
 #blur-overlay {
   position: absolute;
@@ -189,7 +194,14 @@ Aaina DTH Free | Ad-Free Streaming | TV Channels with Entertainment for All Ages
   <div class="player-container">
     <iframe id="media-player" style="display:none;" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
     <video id="video-player" style="display:none;" playsinline controls preload="metadata"></video>
-    <img id="placeholder-image" src="Design-Studio-2025-01-22 (1).png" alt="Select Channel">
+    <div id="placeholder-image">
+  <div class="placeholder-content">
+    <div class="placeholder-arrow">⬆️</div>
+    <div class="placeholder-title">MSTV NETWORK</div>
+    <div class="placeholder-sub">Click on channel icon to watch</div>
+  </div>
+</div>
+
     <div id="blur-overlay"></div>
     <div class="loader-container" id="loader"><div class="spinner"></div></div>
   </div>
