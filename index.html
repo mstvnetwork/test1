@@ -21,13 +21,7 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
   font-weight: 600;
 }
 
-.channel-heading {
-  text-align: center;
-  font-size: 14px;
-  color: #90EE90;
-  font-weight: 600;
-  margin-bottom: 15px;
-}
+.channel-heading { text-align: center; font-size: 14px; color: #90EE90; font-weight: 600; margin-bottom: 15px; }
 
 .ribbon-wrapper {
   position: relative;
@@ -89,7 +83,7 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
   position: relative;
   width: 95%;
   max-width: 1000px;
-  margin: 0 auto 30px;
+  margin: 0 auto 10px;
   background: #000;
   border-radius: 12px;
   overflow: hidden;
@@ -105,6 +99,48 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
   width: 100%; height: 100%;
   object-fit: contain;
   border: none;
+}
+
+#blur-overlay {
+  position: absolute;
+  top: 8%;
+  left: 2%;
+  width: 40%;
+  height: 15%;
+  background: rgba(255,255,255,0.01);
+  backdrop-filter: blur(25px);
+  border-radius: 4px;
+  z-index: 10;
+  display: none;
+}
+
+.loader-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 20;
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(144,238,144,0.2);
+  border-top: 3px solid #90EE90;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+#player-message {
+  text-align: center;
+  color: #90EE90;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 20px;
+  min-height: 20px;
+  transition: opacity 0.3s ease;
+  opacity: 1;
 }
 
 footer {
@@ -135,12 +171,17 @@ Aaina DTH Free | Ad-Free Streaming | TV Channels with Entertainment for All Ages
 </div>
 
 <div id="fullscreen-wrapper">
-<div class="player-container">
-<iframe id="media-player" style="display:none;" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
-<video id="video-player" style="display:none;" playsinline controls preload="metadata"></video>
-<img id="placeholder-image" src="Design-Studio-2025-01-22 (1).png" alt="Select Channel">
+  <div class="player-container">
+    <iframe id="media-player" style="display:none;" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+    <video id="video-player" style="display:none;" playsinline controls preload="metadata"></video>
+    <img id="placeholder-image" src="Design-Studio-2025-01-22 (1).png" alt="Select Channel">
+    <div id="blur-overlay"></div>
+    <div class="loader-container" id="loader"><div class="spinner"></div></div>
+  </div>
 </div>
-</div>
+
+<!-- Channel-specific message below player container -->
+<div id="player-message"></div>
 
 <footer>
 <div style="max-width:800px;margin:0 auto;">
@@ -154,6 +195,7 @@ We do not host or stream any content directly.
 </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -161,8 +203,12 @@ const videoPlayer = document.getElementById('video-player');
 const iframePlayer = document.getElementById('media-player');
 const grid = document.getElementById('logo-grid');
 const fsWrapper = document.getElementById('fullscreen-wrapper');
+const messageEl = document.getElementById('player-message');
+const blurOverlay = document.getElementById('blur-overlay');
+const loader = document.getElementById('loader');
 
 let autoScrollInterval;
+let currentChannelIndex = null;
 
 // FULLSCREEN
 function openFullscreen() {
@@ -170,13 +216,11 @@ function openFullscreen() {
   else if (fsWrapper.webkitRequestFullscreen) fsWrapper.webkitRequestFullscreen();
 }
 
-// CONTINUOUS AUTO SCROLL
+// AUTO SCROLL
 function startAutoScroll() {
   autoScrollInterval = setInterval(() => {
     grid.scrollLeft += 1;
-    if (grid.scrollLeft >= grid.scrollWidth / 2) {
-      grid.scrollLeft = 0;
-    }
+    if (grid.scrollLeft >= grid.scrollWidth / 2) grid.scrollLeft = 0;
   }, 20);
 }
 
@@ -186,123 +230,130 @@ function scrollRibbon(distance) {
 
 // CHANNEL DATA
 const channelsData = [
-  { 
-    name: "Star Sports", 
-    url: "https://streamcrichd.com/update/star.php", 
-    type: "iframe",
-    logo: "cb2f146ca360b682048f5cdb75f557ec.jpg", 
-    showBadge: false,
-    message: "Enjoy live sports action in HD!"
-  },
-  { 
-    name: "Bollywood Classic HD", 
-    url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", 
-    type: "hls",
-    logo: "wlo_logo_200_200.jpg", 
-    showBadge: false,
-    message: "Classic Bollywood movies for everyone."
-  },
-  { 
-    name: "Zee Cinema",
-    url: "https://freeways.hosthampster.com/zeecinema.html",
-    type: "iframe",
-    logo: "wlo_logo_200_200.jpg",
-    showBadge: true,
-    message: "Blockbusters for the whole family!"
-  }
+{
+name: "Star Sports",
+url: "https://streamcrichd.com/update/star.php",
+type: "iframe",
+logo: "cb2f146ca360b682048f5cdb75f557ec.jpg",
+message: "Enjoy live sports action in HD!",
+showBadge: false
+},
+{
+name: "Bollywood Classic HD",
+url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+type: "hls",
+logo: "wlo_logo_200_200.jpg",
+message: "Classic Bollywood movies for everyone.",
+showBadge: false
+},
+{
+name: "Zee Cinema",
+url: "https://freeways.hosthampster.com/zeecinema.html?autoplay=1",
+type: "iframe",
+logo: "wlo_logo_200_200.jpg",
+message: "Blockbusters for the whole family!",
+showBadge: true
+}
 ];
 
 // BUILD RIBBON
 channelsData.forEach((ch,i)=>{
-const card=document.createElement('div');
-card.className='logo-card';
-card.dataset.type=ch.type;
-card.innerHTML=`<div class="live-dot"></div><img src="${ch.logo}"><span>${ch.name}</span>`;
-card.onclick=()=>handleSelection(i);
-grid.appendChild(card);
+  const card = document.createElement('div');
+  card.className='logo-card';
+  card.dataset.type = ch.type;
+  card.innerHTML = `<div class="live-dot"></div><img src="${ch.logo}"><span>${ch.name}</span>`;
+  card.onclick = () => handleSelection(i);
+  grid.appendChild(card);
 });
 
-// DUPLICATE FOR INFINITE LOOP
+// DUPLICATE FOR LOOP
 function makeRibbonLoop(){
-const cards=Array.from(grid.children);
-cards.forEach(c=>{
-const clone=c.cloneNode(true);
-clone.onclick=c.onclick;
-grid.appendChild(clone);
-});
+  const cards = Array.from(grid.children);
+  cards.forEach(c => {
+    const clone = c.cloneNode(true);
+    clone.onclick = c.onclick;
+    grid.appendChild(clone);
+  });
 }
 makeRibbonLoop();
 
 // STOP PLAYBACK
 function stopAllPlayback(){
-videoPlayer.pause();
-videoPlayer.removeAttribute('src');
-videoPlayer.load();
-videoPlayer.style.display='none';
-iframePlayer.src='';
-iframePlayer.style.display='none';
+  if(videoPlayer) {
+    videoPlayer.pause();
+    videoPlayer.removeAttribute('src');
+    videoPlayer.load();
+    videoPlayer.style.display='none';
+  }
+  iframePlayer.src='';
+  iframePlayer.style.display='none';
 }
 
 // HANDLE SELECTION
 function handleSelection(index){
-const channel=channelsData[index];
-stopAllPlayback();
+  const channel = channelsData[index];
+  currentChannelIndex = index;
+  stopAllPlayback();
 
-document.querySelectorAll('.logo-card').forEach(c=>c.classList.remove('active'));
-grid.children[index].classList.add('active');
+  document.querySelectorAll('.logo-card').forEach(c=>c.classList.remove('active'));
+  if(grid.children[index]) grid.children[index].classList.add('active');
 
-if(channel.type==='hls'){
-videoPlayer.style.display='block';
-videoPlayer.src=channel.url;
-videoPlayer.muted=false;
-videoPlayer.play().catch(()=>{
-videoPlayer.muted=true;
-videoPlayer.play();
+  // Set message text but hide initially
+messageEl.textContent = channel.message || '';
+messageEl.style.opacity = 0; // hidden initially
+
+// Trigger fullscreen
+setTimeout(() => {
+    if(!document.fullscreenElement) openFullscreen();
+}, 300);
+
+// Show message only when fullscreen is active
+document.addEventListener('fullscreenchange', () => {
+    const activeChannel = grid.children[currentChannelIndex];
+    if(document.fullscreenElement && activeChannel){
+        messageEl.style.opacity = 1;
+    } else {
+        messageEl.style.opacity = 0;
+    }
 });
-}else{
-iframePlayer.style.display='block';
-iframePlayer.src=channel.url;
 
-// attempt autoplay for iframe
-setTimeout(()=>{
-iframePlayer.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-},1000);
+
+  // Blur overlay toggle
+  blurOverlay.style.display = channel.showBadge ? 'block' : 'none';
+
+  // Show loader
+  loader.style.display = 'flex';
+
+  if(channel.type==='hls'){
+    videoPlayer.style.display='block';
+    if(typeof Hls !== 'undefined' && Hls.isSupported()){
+      const hls = new Hls({ maxBufferLength:5, maxMaxBufferLength:15 });
+      hls.loadSource(channel.url);
+      hls.attachMedia(videoPlayer);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if(hls.levels.length>0) hls.currentLevel = 0; // lowest quality first
+        loader.style.display='none';
+        videoPlayer.play().catch(()=>{ videoPlayer.muted=true; videoPlayer.play(); });
+      });
+    } else if(videoPlayer.canPlayType('application/vnd.apple.mpegurl')){
+      videoPlayer.src = channel.url;
+      videoPlayer.play().finally(()=>loader.style.display='none');
+    }
+  } else {
+    iframePlayer.style.display='block';
+    iframePlayer.src = channel.url;
+
+    // Fallback timeout for slow iframe autoplay
+    const iframeTimeout = setTimeout(()=>loader.style.display='none', 5000);
+    iframePlayer.onload = ()=>{ clearTimeout(iframeTimeout); loader.style.display='none'; };
+  }
+
+  // Trigger fullscreen
+  setTimeout(()=>{ if(!document.fullscreenElement) openFullscreen(); },300);
 }
 
-// trigger fullscreen after small delay
-setTimeout(()=>{
-if(!document.fullscreenElement) openFullscreen();
-},300);
-}
-
+// START AUTO SCROLL
 startAutoScroll();
 </script>
 </body>
 </html>
-
-
-
-
-const channelsData = [
-  { 
-    name: "Star Sports", 
-    url: "https://streamcrichd.com/update/star.php", 
-    type: "iframe",
-    logo: "cb2f146ca360b682048f5cdb75f557ec.jpg", 
-    message: "Enjoy live sports action in HD!"
-  },
-  { 
-    name: "Bollywood Classic HD", 
-    url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", 
-    type: "hls",
-    logo: "wlo_logo_200_200.jpg", 
-    message: "Classic Bollywood movies for everyone."
-  },
-  { 
-    name: "Zee Cinema",
-    url: "https://freeways.hosthampster.com/zeecinema.html",
-    type: "iframe",
-    logo: "wlo_logo_200_200.jpg",
-    message: "Blockbusters for the whole family!"
-  }
-];
