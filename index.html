@@ -356,11 +356,12 @@ function handleSelection(index){
       videoPlayer.play().finally(()=>loader.style.display='none');
     }
   } else {
-    iframePlayer.style.display='block';
-    iframePlayer.src = channel.url;
-    const iframeTimeout = setTimeout(()=>loader.style.display='none',5000);
-    iframePlayer.onload = ()=>{ clearTimeout(iframeTimeout); loader.style.display='none'; };
-  }
+iframePlayer.style.display = 'block';
+iframePlayer.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
+iframePlayer.src = channel.url;
+const iframeTimeout = setTimeout(()=>loader.style.display='none',5000);
+iframePlayer.onload = ()=>{ clearTimeout(iframeTimeout); loader.style.display='none'; };
+
 
   // fullscreen
   setTimeout(()=>{ if(!document.fullscreenElement) openFullscreen(); },300);
