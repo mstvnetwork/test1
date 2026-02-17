@@ -1,15 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>MSTV Network | Premium DTH</title>
+<title>MSTV Network | Premium DTH 2026</title>
 
 <!-- Universal HLS Decoding Library -->
 <script src="https://cdn.jsdelivr.net"></script>
 
 <style>
-/* 1. UNIVERSAL LOCKS */
+/* 1. UNIVERSAL LOCKS (Anti-Zoom & Anti-Scroll) */
 html, body { 
     margin: 0; padding: 0; width: 100%; overflow-x: hidden; 
     touch-action: pan-y; background: #0F1115; color: #E0E0E0; 
@@ -26,7 +27,7 @@ html, body {
 /* RESTORED: Select Channel Header */
 .channel-heading { text-align: center; font-size: 14px; color: #90EE90; font-weight: 600; margin-bottom: 15px; }
 
-/* RIBBON */
+/* RIBBON (Smooth Infinite Loop) */
 .ribbon-wrapper { position: relative; max-width: 1000px; margin: 0 auto 30px; overflow: hidden; background: #111; border-radius: 12px; }
 .channel-ribbon { display: flex; gap: 15px; padding: 15px; width: max-content; animation: smoothScroll 30s linear infinite; }
 @keyframes smoothScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
@@ -57,7 +58,7 @@ html, body {
 .spinner { width:40px; height:40px; border:3px solid rgba(144,238,144,0.2); border-top:3px solid #90EE90; border-radius:50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
-/* RESTORED: About Us Footer */
+/* RESTORED: Footer About Us */
 footer { background: #000; color: #666; padding: 40px 20px; text-align: center; border-top: 1px solid #222; }
 .footer-about { max-width: 600px; margin: 0 auto 20px; font-size: 13px; line-height: 1.6; }
 </style>
@@ -67,7 +68,7 @@ footer { background: #000; color: #666; padding: 40px 20px; text-align: center; 
 <div class="title-3d">AAINA DTH FREE</div>
 
 <div class="scrolling-news">
-    <marquee scrollamount="6">Aaina DTH Free | Ad-Free Streaming | Universal HD Playback | 2026 Premium Network</marquee>
+    <marquee scrollamount="6">Aaina DTH Free | 2026 Premium Network | Ultra-Low Latency | Ad-Free Channels</marquee>
 </div>
 
 <div class="channel-heading">Select a channel to start streaming</div>
@@ -79,8 +80,11 @@ footer { background: #000; color: #666; padding: 40px 20px; text-align: center; 
 <div id="fullscreen-wrapper">
     <div class="player-container">
         <div id="zee-blur"></div>
-        <iframe id="media-player" style="display:none;" allow="autoplay; fullscreen" allowfullscreen></iframe>
-        <video id="video-player" style="display:none;" playsinline controls></video>
+        <!-- IFRAME WITH AUTOPLAY PERMISSIONS -->
+        <iframe id="media-player" style="display:none;" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+        <!-- VIDEO WITH MUTED AUTOPLAY FOR BETTER STARTUP -->
+        <video id="video-player" style="display:none;" playsinline controls muted></video>
+        
         <img id="placeholder-image" src="Design-Studio-2025-01-22 (1).png">
         <div class="loader-container" id="loader"><div class="spinner"></div></div>
         <div id="channel-msg"></div>
@@ -89,14 +93,12 @@ footer { background: #000; color: #666; padding: 40px 20px; text-align: center; 
 
 <footer>
     <div class="footer-about">
-        <strong>About Us:</strong> MSTV Network is a global leader in providing free-to-air DTH services. Our player is optimised for low-latency streaming and works universally across all devices and network speeds.
+        <strong>About Us:</strong> MSTV Network is a global leader in DTH services. Our player uses advanced HLS.js decoding and adaptive bitrate streaming to deliver high-quality media even on low-speed networks universally.
     </div>
-    <p>&copy; <span id="year"></span> MSTV Network Premium</p>
+    <p>&copy; 2026 MSTV Network</p>
 </footer>
 
 <script>
-document.getElementById('year').textContent = new Date().getFullYear();
-
 const videoPlayer = document.getElementById('video-player'),
       iframePlayer = document.getElementById('media-player'),
       placeholder = document.getElementById('placeholder-image'),
@@ -107,9 +109,7 @@ const videoPlayer = document.getElementById('video-player'),
       msgBox = document.getElementById('channel-msg');
 
 let hlsInstance = null;
-
-const channelsData = [
-
+    const channelsData = [
   { 
     name: "Star Sports", 
     url: "https://streamcrichd.com/update/star.php", 
@@ -133,6 +133,9 @@ const channelsData = [
   }
 ];
 
+
+
+
 function buildRibbon() {
     [...channelsData, ...channelsData].forEach((ch, i) => {
         const card = document.createElement('div');
@@ -143,12 +146,8 @@ function buildRibbon() {
             card.classList.add('active');
             handleSelection(i % channelsData.length);
             
-            // RESTORED: Auto Fullscreen on Select
-            if (fsWrapper.requestFullscreen) {
-                fsWrapper.requestFullscreen();
-            } else if (fsWrapper.webkitRequestFullscreen) {
-                fsWrapper.webkitRequestFullscreen();
-            }
+            // AUTO FULLSCREEN ON SELECT
+            if (fsWrapper.requestFullscreen) fsWrapper.requestFullscreen();
         };
         grid.appendChild(card);
     });
@@ -157,14 +156,9 @@ buildRibbon();
 
 function stopAllPlayback() {
     if(hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-    videoPlayer.pause(); 
-    videoPlayer.src = ""; 
-    videoPlayer.load();
-    videoPlayer.style.display = 'none';
-    iframePlayer.src = ''; 
-    iframePlayer.style.display = 'none';
-    zeeBlur.style.display = 'none'; 
-    msgBox.style.display = 'none';
+    videoPlayer.pause(); videoPlayer.src = ""; videoPlayer.style.display = 'none';
+    iframePlayer.src = ''; iframePlayer.style.display = 'none';
+    zeeBlur.style.display = 'none'; msgBox.style.display = 'none';
 }
 
 function handleSelection(index) {
@@ -180,34 +174,33 @@ function handleSelection(index) {
     if(channel.type === 'hls') {
         videoPlayer.style.display = 'block';
         if (Hls.isSupported()) {
-            const hlsConfig = { 
-                startLevel: 0, 
-                maxBufferLength: 30, 
-                enableWorker: true,
-                lowLatencyMode: true 
-            };
+            const hlsConfig = { startLevel: 0, maxBufferLength: 30, autoStartLoad: true };
             hlsInstance = new Hls(hlsConfig);
             hlsInstance.loadSource(channel.url);
             hlsInstance.attachMedia(videoPlayer);
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                videoPlayer.play().catch(e => console.log("Play error:", e));
-                loader.style.display = 'none';
+                videoPlayer.muted = true; // Required for reliable autoplay in 2026
+                videoPlayer.play().then(() => {
+                    loader.style.display = 'none';
+                    videoPlayer.muted = false; // Unmute if browser allows
+                }).catch(() => loader.style.display = 'none');
             });
             hlsInstance.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) {
-                    msgBox.innerText = "⚠️ Channel Offline / Low Speed Error";
+                    msgBox.innerText = "⚠️ Channel Offline / CORS Blocked";
                     loader.style.display = 'none';
                 }
             });
         } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-            // Safari/iOS Support
             videoPlayer.src = channel.url;
             videoPlayer.play();
             loader.style.display = 'none';
         }
     } else {
         iframePlayer.style.display = 'block';
-        iframePlayer.src = channel.url;
+        // Add muted autoplay param for iframes if possible
+        const separator = channel.url.includes('?') ? '&' : '?';
+        iframePlayer.src = channel.url + separator + "autoplay=1&mute=1";
         iframePlayer.onload = () => loader.style.display = 'none';
     }
 }
