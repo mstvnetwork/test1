@@ -69,12 +69,12 @@ footer { background:#000; color:#888; padding:40px 20px; text-align:center; marg
 <footer><p>&copy; <span id="year"></span> MSTV Network</p></footer>
 
 <script>
-// LAYER 3: HARDWARE LOCK (Optimized to NOT block video data)
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 document.addEventListener('keydown', (e) => { if (e.ctrlKey && ['=', '-', '+', '0'].includes(e.key)) e.preventDefault(); });
 
 document.getElementById('year').textContent = new Date().getFullYear();
+
 const videoPlayer = document.getElementById('video-player'),
       iframePlayer = document.getElementById('media-player'),
       placeholder = document.getElementById('placeholder-image'),
@@ -85,6 +85,7 @@ const videoPlayer = document.getElementById('video-player'),
       msgBox = document.getElementById('channel-msg');
 
 let hlsInstance = null;
+
 const channelsData = [
   { 
     name: "Star Sports", 
@@ -95,7 +96,7 @@ const channelsData = [
   },
   { 
     name: "Bollywood Classic HD", 
-    url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", 
+    url: "YOUR_WORKING_HLS_URL_HERE.m3u8", 
     type: "hls",
     logo: "wlo_logo_200_200.jpg", 
     message: "Classic Bollywood movies for everyone."
@@ -108,7 +109,6 @@ const channelsData = [
     message: "Blockbusters for the whole family!"
   }
 ];
-
 
 function buildRibbon() {
     [...channelsData, ...channelsData].forEach((ch, i) => {
@@ -125,62 +125,95 @@ function buildRibbon() {
 buildRibbon();
 
 function stopAll() {
-    if(hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-    videoPlayer.pause(); 
-    videoPlayer.src = ""; 
-    videoPlayer.load(); // CRITICAL: Hard resets the video buffer
+    if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+    }
+    videoPlayer.pause();
+    videoPlayer.removeAttribute('src');
+    videoPlayer.load();
     videoPlayer.style.display = 'none';
-    iframePlayer.src = ''; 
+
+    iframePlayer.src = '';
     iframePlayer.style.display = 'none';
-    zeeBlur.style.display = 'none'; 
+
+    zeeBlur.style.display = 'none';
     msgBox.style.display = 'none';
 }
 
 function handleSelection(index) {
     const ch = channelsData[index];
+
     stopAll();
     loader.style.display = 'flex';
     placeholder.style.display = 'none';
+
     msgBox.innerText = ch.message;
     msgBox.style.display = 'block';
-    if(ch.name === "Zee Cinema") zeeBlur.style.display = 'block';
 
-    if(ch.type === 'hls') {
+    if (ch.name === "Zee Cinema") {
+        zeeBlur.style.display = 'block';
+    }
+
+    if (ch.type === 'hls') {
         videoPlayer.style.display = 'block';
+
         if (Hls.isSupported()) {
-            hlsInstance = new Hls({ autoStartLoad: true });
+            hlsInstance = new Hls({
+                maxBufferLength: 30,
+                maxMaxBufferLength: 60
+            });
+
+            hlsInstance.loadSource(ch.url);
             hlsInstance.attachMedia(videoPlayer);
-            hlsInstance.on(Hls.Events.MEDIA_ATTACHED, () => {
-                hlsInstance.loadSource(ch.url);
+
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, function () {
+                videoPlayer.play()
+                    .then(() => loader.style.display = 'none')
+                    .catch(() => {
+                        videoPlayer.muted = true;
+                        videoPlayer.play();
+                        loader.style.display = 'none';
+                    });
             });
-            hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                videoPlayer.play().finally(() => loader.style.display = 'none');
+
+            hlsInstance.on(Hls.Events.ERROR, function (event, data) {
+                if (data.fatal) {
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            hlsInstance.startLoad();
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            hlsInstance.recoverMediaError();
+                            break;
+                        default:
+                            stopAll();
+                            loader.style.display = 'none';
+                            break;
+                    }
+                }
             });
-            hlsInstance.on(Hls.Events.ERROR, (e, data) => {
-                if (data.fatal) loader.style.display = 'none';
-            });
+
         } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
             videoPlayer.src = ch.url;
-            videoPlayer.play().finally(() => loader.style.display = 'none');
+            videoPlayer.addEventListener('loadedmetadata', function () {
+                videoPlayer.play();
+                loader.style.display = 'none';
+            });
+        } else {
+            loader.style.display = 'none';
+            alert("HLS not supported in this browser.");
         }
+
     } else {
         iframePlayer.style.display = 'block';
-        iframePlayer.src = ch.url + (ch.url.includes('?') ? '&' : '?') + "autoplay=1&mute=1";
+        iframePlayer.src = ch.url;
         iframePlayer.onload = () => loader.style.display = 'none';
     }
 }
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
 
 
 
