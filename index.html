@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,12 +138,11 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
   font-weight: 600;
   font-size: 14px;
   padding: 8px 12px;
-  position: absolute;
-  top: 100%;
-  left: 0;
   width: 100%;
+  margin-top: 8px;      /* space below player */
   opacity: 0;
   transition: opacity 0.3s ease;
+  position: static;      /* normal flow so it appears under player */
 }
 
 footer {
@@ -183,7 +181,7 @@ Aaina DTH Free | Ad-Free Streaming | TV Channels with Entertainment for All Ages
     <div class="loader-container" id="loader"><div class="spinner"></div></div>
   </div>
 
-  <!-- Channel-specific message inside fullscreen wrapper -->
+  <!-- Channel-specific message -->
   <div id="player-message"></div>
 </div>
 
@@ -301,7 +299,6 @@ function updateMessageVisibility(){
     messageEl.style.opacity = 0;
   }
 }
-
 document.addEventListener('fullscreenchange', updateMessageVisibility);
 
 // HANDLE SELECTION
@@ -339,7 +336,6 @@ function handleSelection(index){
     iframePlayer.style.display='block';
     iframePlayer.src = channel.url;
 
-    // Timeout fallback for iframe autoplay
     const iframeTimeout = setTimeout(()=>loader.style.display='none',5000);
     iframePlayer.onload = ()=>{ clearTimeout(iframeTimeout); loader.style.display='none'; };
   }
@@ -347,7 +343,7 @@ function handleSelection(index){
   // enter fullscreen
   setTimeout(()=>{ if(!document.fullscreenElement) openFullscreen(); },300);
 
-  // immediately check if fullscreen
+  // immediately update message visibility
   updateMessageVisibility();
 }
 
@@ -356,3 +352,4 @@ startAutoScroll();
 </script>
 </body>
 </html>
+
