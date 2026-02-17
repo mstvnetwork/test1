@@ -1,41 +1,33 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- LAYER 1: UNIVERSAL VIEWPORT LOCK (Blocks Mobile Zoom) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>MSTV Network | Premium DTH</title>
 
+<!-- Universal HLS Decoding Library (Required for Bollywood Classic) -->
+<script src="https://cdn.jsdelivr.net"></script>
+
 <style>
-/* Base Styles */
-* { box-sizing: border-box; transition: background 0.3s ease; }
-body { margin: 0; font-family: 'Poppins', sans-serif; color: #E0E0E0; background: #0F1115; overflow-x: hidden; }
+/* LAYER 2: CSS LOCKS (Blocks Sideways Scroll & Gestures) */
+html, body { 
+    margin: 0; padding: 0; width: 100%; max-width: 100%;
+    overflow-x: hidden; position: relative;
+    touch-action: pan-y; /* Allows vertical scroll, blocks pinch/horizontal pan */
+    -webkit-text-size-adjust: 100%;
+    background: #0F1115; color: #E0E0E0; font-family: 'Poppins', sans-serif;
+}
+* { box-sizing: border-box; max-width: 100vw; transition: background 0.3s ease; }
 
 .title-3d { font-size: clamp(1.8rem, 4vw, 3.5rem); text-align: center; margin: 30px 0 10px; font-weight: 800; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-
 .scrolling-news { background: #1A1D20; color: #90EE90; padding: 12px 0; border-top: 1px solid #333; border-bottom: 1px solid #333; margin-bottom: 20px; font-weight: 600; }
-
 .channel-heading { text-align: center; font-size: 14px; color: #90EE90; font-weight: 600; margin-bottom: 15px; }
 
-/* 1. RESTORED: INFINITE SMOOTH RIBBON (No Jitter) */
-.ribbon-wrapper { 
-    position: relative; 
-    max-width: 1000px; 
-    margin: 0 auto 30px; 
-    overflow: hidden; /* Hide overflow for the loop */
-    background: #111;
-    border-radius: 12px;
-}
-.channel-ribbon { 
-    display: flex; 
-    gap: 15px; 
-    padding: 15px; 
-    width: max-content;
-    animation: smoothScroll 30s linear infinite; /* CSS Animation for buttery smoothness */
-}
-@keyframes smoothScroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); } /* Loops perfectly when content is doubled */
-}
+/* RIBBON */
+.ribbon-wrapper { position: relative; max-width: 1000px; margin: 0 auto 30px; overflow: hidden; background: #111; border-radius: 12px; }
+.channel-ribbon { display: flex; gap: 15px; padding: 15px; width: max-content; animation: smoothScroll 30s linear infinite; }
+@keyframes smoothScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 .ribbon-wrapper:hover .channel-ribbon { animation-play-state: paused; }
 
 .logo-card { flex: 0 0 120px; background: #1A1D20; border: 1px solid #333; border-radius: 12px; padding: 10px; cursor: pointer; text-align: center; position: relative; }
@@ -47,47 +39,14 @@ body { margin: 0; font-family: 'Poppins', sans-serif; color: #E0E0E0; background
 @keyframes blink { 0%{opacity:1;} 50%{opacity:0.3;} 100%{opacity:1;} }
 .active .live-dot { display: block; }
 
-/* 2. RESTORED: PLAYER & OVERLAYS */
+/* PLAYER & OVERLAYS */
 #fullscreen-wrapper { position: relative; width: 95%; max-width: 1000px; margin: 0 auto 30px; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 .player-container { position: relative; width: 100%; padding-top: 56.25%; }
 
-/* Zee Cinema Logo Blur */
-#zee-blur {
-    position: absolute;
-    top: 20px; 
-    left: 20px;
-    width: 90px; 
-    height: 50px;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    z-index: 10;
-    border-radius: 5px;
-    display: none; /* Controlled by JS */
-    pointer-events: none;
-}
+#zee-blur { position: absolute; top: 20px; left: 20px; width: 90px; height: 50px; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 10; border-radius: 5px; display: none; pointer-events: none; }
+#channel-msg { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0, 0, 0, 0.7); color: #90EE90; padding: 12px; text-align: center; font-weight: 600; font-size: 14px; z-index: 11; display: none; border-top: 1px solid #90EE90; }
 
-/* Channel Message Overlay */
-#channel-msg {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    color: #90EE90;
-    padding: 12px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 14px;
-    z-index: 11;
-    display: none;
-    border-top: 1px solid #90EE90;
-}
-
-.player-container iframe,
-.player-container video,
-#placeholder-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border: none; }
-
+.player-container iframe, .player-container video, #placeholder-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border: none; }
 .loader-container { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:none; z-index: 5; }
 .spinner { width:40px; height:40px; border:3px solid rgba(144,238,144,0.2); border-top:3px solid #90EE90; border-radius:50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
@@ -95,17 +54,10 @@ body { margin: 0; font-family: 'Poppins', sans-serif; color: #E0E0E0; background
 footer { background:#000; color:#888; padding:40px 20px; text-align:center; margin-top: 20px; }
 </style>
 </head>
-
 <body>
 
 <div class="title-3d">AAINA DTH FREE</div>
-
-<div class="scrolling-news">
-    <marquee scrollamount="6">
-    Aaina DTH Free | Ad-Free Streaming | TV Channels with Entertainment for All Ages
-    </marquee>
-</div>
-
+<div class="scrolling-news"><marquee scrollamount="6">Aaina DTH Free | Ad-Free Streaming | Premium Universal Player</marquee></div>
 <div class="channel-heading">Scroll to select channels</div>
 
 <div class="ribbon-wrapper">
@@ -114,33 +66,24 @@ footer { background:#000; color:#888; padding:40px 20px; text-align:center; marg
 
 <div id="fullscreen-wrapper">
     <div class="player-container">
-        <!-- Blur Box for Zee Cinema -->
         <div id="zee-blur"></div>
-        
-        <iframe 
-            id="media-player" 
-            style="display:none;" 
-            allow="autoplay; fullscreen; encrypted-media" 
-            allowfullscreen 
-            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation">
-        </iframe>
-
-        <video id="video-player" style="display:none;" playsinline controls preload="metadata"></video>
+        <iframe id="media-player" style="display:none;" allow="autoplay; fullscreen; encrypted-media" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"></iframe>
+        <video id="video-player" style="display:none;" playsinline controls muted></video>
         <img id="placeholder-image" src="Design-Studio-2025-01-22 (1).png" alt="Select Channel">
         <div class="loader-container" id="loader"><div class="spinner"></div></div>
-        
-        <!-- RESTORED: Channel Specific Message -->
         <div id="channel-msg"></div>
     </div>
 </div>
 
-<footer>
-<p>&copy; <span id="year"></span> MSTV Network</p>
-</footer>
+<footer><p>&copy; <span id="year"></span> MSTV Network</p></footer>
 
 <script>
-document.getElementById('year').textContent = new Date().getFullYear();
+// LAYER 3: HARDWARE LOCK (Prevents Desktop/Trackpad Zoom)
+document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+document.addEventListener('keydown', (e) => { if (e.ctrlKey && ['=', '-', '+', '0'].includes(e.key)) e.preventDefault(); });
 
+document.getElementById('year').textContent = new Date().getFullYear();
 const videoPlayer = document.getElementById('video-player'),
       iframePlayer = document.getElementById('media-player'),
       placeholder = document.getElementById('placeholder-image'),
@@ -150,38 +93,16 @@ const videoPlayer = document.getElementById('video-player'),
       zeeBlur = document.getElementById('zee-blur'),
       msgBox = document.getElementById('channel-msg');
 
-let hlsInstance = null;
+let hls = null;
 
-/* Channel Data */
 const channelsData = [
-  { 
-    name: "Star Sports", 
-    url: "https://streamcrichd.com/update/star.php", 
-    type: "iframe",
-    logo: "cb2f146ca360b682048f5cdb75f557ec.jpg", 
-    message: "Enjoy live sports action in HD!"
-  },
-  { 
-    name: "Bollywood Classic HD", 
-    url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", 
-    type: "hls",
-    logo: "wlo_logo_200_200.jpg", 
-    message: "Classic Bollywood movies for everyone."
-  },
-  { 
-    name: "Zee Cinema",
-    url: "https://freeways.hosthampster.com/zeecinema.html",
-    type: "iframe",
-    logo: "wlo_logo_200_200.jpg",
-    message: "Blockbusters for the whole family!"
-  }
+  { name: "Star Sports", url: "https://streamcrichd.com/update/star.php", type: "iframe", logo: "cb2f146ca360b682048f5cdb75f557ec.jpg", message: "Enjoy live sports action in HD!" },
+  { name: "Bollywood Classic HD", url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", type: "hls", logo: "wlo_logo_200_200.jpg", message: "Classic Bollywood movies for everyone." },
+  { name: "Zee Cinema", url: "https://freeways.hosthampster.com/zeecinema.html", type: "iframe", logo: "wlo_logo_200_200.jpg", message: "Blockbusters for the whole family!" }
 ];
 
-
-/* Build Ribbon with Double Content for Infinite Loop */
 function buildRibbon() {
-    const doubleChannels = [...channelsData, ...channelsData]; // Duplicate for seamless CSS scroll
-    doubleChannels.forEach((ch, i) => {
+    [...channelsData, ...channelsData].forEach((ch, i) => {
         const card = document.createElement('div');
         card.className = 'logo-card';
         card.innerHTML = `<div class="live-dot"></div><img src="${ch.logo}"><span>${ch.name}</span>`;
@@ -196,52 +117,42 @@ function buildRibbon() {
 }
 buildRibbon();
 
-/* Playback Logic */
-function stopAllPlayback() {
-    videoPlayer.pause();
-    videoPlayer.src = "";
-    videoPlayer.style.display = 'none';
-    iframePlayer.src = '';
-    iframePlayer.style.display = 'none';
-    zeeBlur.style.display = 'none';
-    msgBox.style.display = 'none';
+function stopAll() {
+    if(hls) { hls.destroy(); hls = null; }
+    videoPlayer.pause(); videoPlayer.src = ""; videoPlayer.style.display = 'none';
+    iframePlayer.src = ''; iframePlayer.style.display = 'none';
+    zeeBlur.style.display = 'none'; msgBox.style.display = 'none';
 }
 
 function handleSelection(index) {
-    const channel = channelsData[index];
-    stopAllPlayback();
+    const ch = channelsData[index];
+    stopAll();
     loader.style.display = 'flex';
     placeholder.style.display = 'none';
-
-    // 1. Show restored message
-    msgBox.innerText = channel.message;
+    msgBox.innerText = ch.message;
     msgBox.style.display = 'block';
+    if(ch.name === "Zee Cinema") zeeBlur.style.display = 'block';
 
-    // 2. Show restored Zee Cinema Blur
-    if(channel.name === "Zee Cinema") {
-        zeeBlur.style.display = 'block';
-    }
-
-    if(channel.type === 'hls') {
+    if(ch.type === 'hls') {
         videoPlayer.style.display = 'block';
-        videoPlayer.src = channel.url;
-        videoPlayer.play().catch(()=>console.log("Autoplay blocked"));
-        loader.style.display = 'none';
+        if (Hls.isSupported()) {
+            hls = new Hls({ autoStartLoad: true });
+            hls.attachMedia(videoPlayer);
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(ch.url));
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                videoPlayer.play().finally(() => loader.style.display = 'none');
+            });
+        } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+            videoPlayer.src = ch.url;
+            videoPlayer.play().finally(() => loader.style.display = 'none');
+        }
     } else {
         iframePlayer.style.display = 'block';
-        iframePlayer.src = channel.url;
+        iframePlayer.src = ch.url + (ch.url.includes('?') ? '&' : '?') + "autoplay=1&mute=1";
         iframePlayer.onload = () => loader.style.display = 'none';
     }
 }
-
-// Adjust UI when entering/exiting fullscreen
-document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) {
-        // You can add logic here if you want things to change when exiting
-    }
-});
 </script>
-
 </body>
 </html>
 
