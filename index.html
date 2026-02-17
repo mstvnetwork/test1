@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -133,14 +134,17 @@ body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #E0E0E0; ba
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 #player-message {
-  text-align: center;
+  text-align: left;
   color: #90EE90;
   font-weight: 600;
   font-size: 14px;
-  margin-bottom: 20px;
-  min-height: 20px;
+  padding: 8px 12px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  opacity: 0;
   transition: opacity 0.3s ease;
-  opacity: 1;
 }
 
 footer {
@@ -178,10 +182,10 @@ Aaina DTH Free | Ad-Free Streaming | TV Channels with Entertainment for All Ages
     <div id="blur-overlay"></div>
     <div class="loader-container" id="loader"><div class="spinner"></div></div>
   </div>
-</div>
 
-<!-- Channel-specific message below player container -->
-<div id="player-message"></div>
+  <!-- Channel-specific message inside fullscreen wrapper -->
+  <div id="player-message"></div>
+</div>
 
 <footer>
 <div style="max-width:800px;margin:0 auto;">
@@ -212,16 +216,16 @@ let currentChannelIndex = null;
 
 // FULLSCREEN
 function openFullscreen() {
-  if (fsWrapper.requestFullscreen) fsWrapper.requestFullscreen();
-  else if (fsWrapper.webkitRequestFullscreen) fsWrapper.webkitRequestFullscreen();
+  if(fsWrapper.requestFullscreen) fsWrapper.requestFullscreen();
+  else if(fsWrapper.webkitRequestFullscreen) fsWrapper.webkitRequestFullscreen();
 }
 
 // AUTO SCROLL
 function startAutoScroll() {
-  autoScrollInterval = setInterval(() => {
+  autoScrollInterval = setInterval(()=>{
     grid.scrollLeft += 1;
-    if (grid.scrollLeft >= grid.scrollWidth / 2) grid.scrollLeft = 0;
-  }, 20);
+    if(grid.scrollLeft >= grid.scrollWidth / 2) grid.scrollLeft = 0;
+  },20);
 }
 
 function scrollRibbon(distance) {
@@ -262,14 +266,14 @@ channelsData.forEach((ch,i)=>{
   card.className='logo-card';
   card.dataset.type = ch.type;
   card.innerHTML = `<div class="live-dot"></div><img src="${ch.logo}"><span>${ch.name}</span>`;
-  card.onclick = () => handleSelection(i);
+  card.onclick = ()=>handleSelection(i);
   grid.appendChild(card);
 });
 
 // DUPLICATE FOR LOOP
 function makeRibbonLoop(){
   const cards = Array.from(grid.children);
-  cards.forEach(c => {
+  cards.forEach(c=>{
     const clone = c.cloneNode(true);
     clone.onclick = c.onclick;
     grid.appendChild(clone);
@@ -279,7 +283,7 @@ makeRibbonLoop();
 
 // STOP PLAYBACK
 function stopAllPlayback(){
-  if(videoPlayer) {
+  if(videoPlayer){
     videoPlayer.pause();
     videoPlayer.removeAttribute('src');
     videoPlayer.load();
@@ -288,6 +292,17 @@ function stopAllPlayback(){
   iframePlayer.src='';
   iframePlayer.style.display='none';
 }
+
+// UPDATE MESSAGE VISIBILITY
+function updateMessageVisibility(){
+  if(document.fullscreenElement && currentChannelIndex!==null){
+    messageEl.style.opacity = 1;
+  } else {
+    messageEl.style.opacity = 0;
+  }
+}
+
+document.addEventListener('fullscreenchange', updateMessageVisibility);
 
 // HANDLE SELECTION
 function handleSelection(index){
@@ -298,30 +313,11 @@ function handleSelection(index){
   document.querySelectorAll('.logo-card').forEach(c=>c.classList.remove('active'));
   if(grid.children[index]) grid.children[index].classList.add('active');
 
-  // Set message text but hide initially
-messageEl.textContent = channel.message || '';
-messageEl.style.opacity = 0; // hidden initially
+  // set message text and hide initially
+  messageEl.textContent = channel.message || '';
+  messageEl.style.opacity = 0;
 
-// Trigger fullscreen
-setTimeout(() => {
-    if(!document.fullscreenElement) openFullscreen();
-}, 300);
-
-// Show message only when fullscreen is active
-document.addEventListener('fullscreenchange', () => {
-    const activeChannel = grid.children[currentChannelIndex];
-    if(document.fullscreenElement && activeChannel){
-        messageEl.style.opacity = 1;
-    } else {
-        messageEl.style.opacity = 0;
-    }
-});
-
-
-  // Blur overlay toggle
   blurOverlay.style.display = channel.showBadge ? 'block' : 'none';
-
-  // Show loader
   loader.style.display = 'flex';
 
   if(channel.type==='hls'){
@@ -330,7 +326,7 @@ document.addEventListener('fullscreenchange', () => {
       const hls = new Hls({ maxBufferLength:5, maxMaxBufferLength:15 });
       hls.loadSource(channel.url);
       hls.attachMedia(videoPlayer);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
         if(hls.levels.length>0) hls.currentLevel = 0; // lowest quality first
         loader.style.display='none';
         videoPlayer.play().catch(()=>{ videoPlayer.muted=true; videoPlayer.play(); });
@@ -343,13 +339,16 @@ document.addEventListener('fullscreenchange', () => {
     iframePlayer.style.display='block';
     iframePlayer.src = channel.url;
 
-    // Fallback timeout for slow iframe autoplay
-    const iframeTimeout = setTimeout(()=>loader.style.display='none', 5000);
+    // Timeout fallback for iframe autoplay
+    const iframeTimeout = setTimeout(()=>loader.style.display='none',5000);
     iframePlayer.onload = ()=>{ clearTimeout(iframeTimeout); loader.style.display='none'; };
   }
 
-  // Trigger fullscreen
+  // enter fullscreen
   setTimeout(()=>{ if(!document.fullscreenElement) openFullscreen(); },300);
+
+  // immediately check if fullscreen
+  updateMessageVisibility();
 }
 
 // START AUTO SCROLL
