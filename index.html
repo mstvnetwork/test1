@@ -6,55 +6,107 @@
 <title>MSTV Network | Premium DTH</title>
 
 <style>
-* { box-sizing: border-box; transition: all 0.3s ease; }
+/* Base Styles */
+* { box-sizing: border-box; transition: background 0.3s ease; }
 body { margin: 0; font-family: 'Poppins', sans-serif; color: #E0E0E0; background: #0F1115; overflow-x: hidden; }
 
-.title-3d { font-size: clamp(1.8rem, 4vw, 3.5rem); text-align: center; margin: 30px 0 10px; font-weight: 800; }
+.title-3d { font-size: clamp(1.8rem, 4vw, 3.5rem); text-align: center; margin: 30px 0 10px; font-weight: 800; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+
 .scrolling-news { background: #1A1D20; color: #90EE90; padding: 12px 0; border-top: 1px solid #333; border-bottom: 1px solid #333; margin-bottom: 20px; font-weight: 600; }
+
 .channel-heading { text-align: center; font-size: 14px; color: #90EE90; font-weight: 600; margin-bottom: 15px; }
 
-/* --- JITTER FIX: CSS SMOOTH SCROLL --- */
-.ribbon-wrapper { position: relative; max-width: 1000px; margin: 0 auto 30px; overflow: hidden; }
-
+/* 1. RESTORED: INFINITE SMOOTH RIBBON (No Jitter) */
+.ribbon-wrapper { 
+    position: relative; 
+    max-width: 1000px; 
+    margin: 0 auto 30px; 
+    overflow: hidden; /* Hide overflow for the loop */
+    background: #111;
+    border-radius: 12px;
+}
 .channel-ribbon { 
     display: flex; 
-    width: max-content; 
     gap: 15px; 
-    padding: 10px 5px 20px; 
-    /* linear ensures no stuttering or speed changes */
-    animation: smooth-loop 40s linear infinite; 
+    padding: 15px; 
+    width: max-content;
+    animation: smoothScroll 30s linear infinite; /* CSS Animation for buttery smoothness */
 }
-
-/* Pause on hover so selection is easy */
-.ribbon-wrapper:hover .channel-ribbon { animation-play-state: paused; }
-
-@keyframes smooth-loop {
+@keyframes smoothScroll {
     0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); } 
+    100% { transform: translateX(-50%); } /* Loops perfectly when content is doubled */
 }
+.ribbon-wrapper:hover .channel-ribbon { animation-play-state: paused; }
 
 .logo-card { flex: 0 0 120px; background: #1A1D20; border: 1px solid #333; border-radius: 12px; padding: 10px; cursor: pointer; text-align: center; position: relative; }
 .logo-card.active { border-color: #90EE90; background: rgba(144,238,144,0.1); }
-.logo-card img { width: 100%; height: 50px; object-fit: contain; pointer-events: none; }
-.logo-card span { display: block; font-size: 10px; margin-top: 5px; color: #888; font-weight: 600; pointer-events: none; }
+.logo-card img { width: 100%; height: 50px; object-fit: contain; }
+.logo-card span { display: block; font-size: 10px; margin-top: 5px; color: #888; font-weight: 600; }
 
-/* Player Settings */
-#fullscreen-wrapper { position: relative; width: 95%; max-width: 1000px; margin: 0 auto 30px; background: #000; border-radius: 12px; overflow: hidden; }
+.live-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; background: #ff4b2b; border-radius: 50%; display: none; animation: blink 1s infinite; }
+@keyframes blink { 0%{opacity:1;} 50%{opacity:0.3;} 100%{opacity:1;} }
+.active .live-dot { display: block; }
+
+/* 2. RESTORED: PLAYER & OVERLAYS */
+#fullscreen-wrapper { position: relative; width: 95%; max-width: 1000px; margin: 0 auto 30px; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 .player-container { position: relative; width: 100%; padding-top: 56.25%; }
-.player-container iframe, .player-container video, #placeholder-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border: none; }
 
-.loader-container { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:none; }
+/* Zee Cinema Logo Blur */
+#zee-blur {
+    position: absolute;
+    top: 20px; 
+    left: 20px;
+    width: 90px; 
+    height: 50px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: 10;
+    border-radius: 5px;
+    display: none; /* Controlled by JS */
+    pointer-events: none;
+}
+
+/* Channel Message Overlay */
+#channel-msg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    color: #90EE90;
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 11;
+    display: none;
+    border-top: 1px solid #90EE90;
+}
+
+.player-container iframe,
+.player-container video,
+#placeholder-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border: none; }
+
+.loader-container { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:none; z-index: 5; }
 .spinner { width:40px; height:40px; border:3px solid rgba(144,238,144,0.2); border-top:3px solid #90EE90; border-radius:50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
-footer { background:#000; color:#888; padding:40px 20px; text-align:center; }
+footer { background:#000; color:#888; padding:40px 20px; text-align:center; margin-top: 20px; }
 </style>
 </head>
 
 <body>
+
 <div class="title-3d">AAINA DTH FREE</div>
-<div class="scrolling-news"><marquee>Aaina DTH Free | Premium Streaming Quality</marquee></div>
-<div class="channel-heading">Select a Channel Below</div>
+
+<div class="scrolling-news">
+    <marquee scrollamount="6">
+    Aaina DTH Free | Ad-Free Streaming | TV Channels with Entertainment for All Ages
+    </marquee>
+</div>
+
+<div class="channel-heading">Scroll to select channels</div>
 
 <div class="ribbon-wrapper">
     <div class="channel-ribbon" id="logo-grid"></div>
@@ -62,15 +114,29 @@ footer { background:#000; color:#888; padding:40px 20px; text-align:center; }
 
 <div id="fullscreen-wrapper">
     <div class="player-container">
-        <!-- Sandbox to stop iframe redirects -->
-        <iframe id="media-player" style="display:none;" allow="autoplay; fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"></iframe>
-        <video id="video-player" style="display:none;" playsinline controls></video>
+        <!-- Blur Box for Zee Cinema -->
+        <div id="zee-blur"></div>
+        
+        <iframe 
+            id="media-player" 
+            style="display:none;" 
+            allow="autoplay; fullscreen; encrypted-media" 
+            allowfullscreen 
+            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation">
+        </iframe>
+
+        <video id="video-player" style="display:none;" playsinline controls preload="metadata"></video>
         <img id="placeholder-image" src="Design-Studio-2025-01-22 (1).png" alt="Select Channel">
         <div class="loader-container" id="loader"><div class="spinner"></div></div>
+        
+        <!-- RESTORED: Channel Specific Message -->
+        <div id="channel-msg"></div>
     </div>
 </div>
 
-<footer><p>&copy; <span id="year"></span> MSTV Network</p></footer>
+<footer>
+<p>&copy; <span id="year"></span> MSTV Network</p>
+</footer>
 
 <script>
 document.getElementById('year').textContent = new Date().getFullYear();
@@ -79,56 +145,86 @@ const videoPlayer = document.getElementById('video-player'),
       iframePlayer = document.getElementById('media-player'),
       placeholder = document.getElementById('placeholder-image'),
       loader = document.getElementById('loader'),
-      grid = document.getElementById('logo-grid');
+      fsWrapper = document.getElementById('fullscreen-wrapper'),
+      grid = document.getElementById('logo-grid'),
+      zeeBlur = document.getElementById('zee-blur'),
+      msgBox = document.getElementById('channel-msg');
 
-// SAME CHANNEL DATA
+let hlsInstance = null;
+
+/* Channel Data */
 const channelsData = [
-      { name:"Star Sports", url:"https://streamcrichd.com/update/star.php", type:"iframe", logo:"cb2f146ca360b682048f5cdb75f557ec.jpg" },
-      { name:"Bollywood Classic", url:"https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8", type:"hls", logo:"wlo_logo_200_200.jpg" },
-      { name:"Zee Cinema", url:"https://freeways.hosthampster.com/zeecinema.html", type:"iframe", logo:"wlo_logo_200_200.jpg" }
-    ];
+  { 
+    name: "Star Sports", 
+    url: "https://streamcrichd.com", 
+    type: "iframe",
+    logo: "cb2f146ca360b682048f5cdb75f557ec.jpg", 
+    message: "Enjoy live sports action in HD!"
+  },
+  { 
+    name: "Bollywood Classic HD", 
+    url: "https://d35j504z0x2vu2.cloudfront.net", 
+    type: "hls",
+    logo: "wlo_logo_200_200.jpg", 
+    message: "Classic Bollywood movies for everyone."
+  },
+  { 
+    name: "Zee Cinema",
+    url: "https://freeways.hosthampster.com",
+    type: "iframe",
+    logo: "wlo_logo_200_200.jpg",
+    message: "Blockbusters for the whole family!"
+  }
+];
 
- 
-
-// SETUP LOGO GRID (ORIGINAL + CLONE FOR SEAMLESS LOOP)
+/* Build Ribbon with Double Content for Infinite Loop */
 function buildRibbon() {
-    const combined = [...channelsData, ...channelsData]; // Dublicate array once
-    combined.forEach((ch, index) => {
+    const doubleChannels = [...channelsData, ...channelsData]; // Duplicate for seamless CSS scroll
+    doubleChannels.forEach((ch, i) => {
         const card = document.createElement('div');
         card.className = 'logo-card';
-        // We use the original index (modulo length) so clones point to original data
-        card.dataset.id = index % channelsData.length; 
-        card.innerHTML = `<img src="${ch.logo}"><span>${ch.name}</span>`;
-        
-        card.onclick = function() {
+        card.innerHTML = `<div class="live-dot"></div><img src="${ch.logo}"><span>${ch.name}</span>`;
+        card.onclick = () => {
             document.querySelectorAll('.logo-card').forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            handleSelection(this.dataset.id);
+            card.classList.add('active');
+            handleSelection(i % channelsData.length);
+            if (fsWrapper.requestFullscreen) fsWrapper.requestFullscreen();
         };
         grid.appendChild(card);
     });
 }
 buildRibbon();
 
-function stopAllPlayback(){
+/* Playback Logic */
+function stopAllPlayback() {
     videoPlayer.pause();
-    videoPlayer.removeAttribute('src');
-    videoPlayer.load();
-    videoPlayer.style.display='none';
-    iframePlayer.src='';
-    iframePlayer.style.display='none';
+    videoPlayer.src = "";
+    videoPlayer.style.display = 'none';
+    iframePlayer.src = '';
+    iframePlayer.style.display = 'none';
+    zeeBlur.style.display = 'none';
+    msgBox.style.display = 'none';
 }
 
-function handleSelection(dataId){
-    const channel = channelsData[dataId]; // Always pulls from original array
+function handleSelection(index) {
+    const channel = channelsData[index];
     stopAllPlayback();
-    loader.style.display='flex';
-    placeholder.style.display='none';
+    loader.style.display = 'flex';
+    placeholder.style.display = 'none';
 
-    if(channel.type === 'hls'){
+    // 1. Show restored message
+    msgBox.innerText = channel.message;
+    msgBox.style.display = 'block';
+
+    // 2. Show restored Zee Cinema Blur
+    if(channel.name === "Zee Cinema") {
+        zeeBlur.style.display = 'block';
+    }
+
+    if(channel.type === 'hls') {
         videoPlayer.style.display = 'block';
-        videoPlayer.src = channel.url; 
-        videoPlayer.play();
+        videoPlayer.src = channel.url;
+        videoPlayer.play().catch(()=>console.log("Autoplay blocked"));
         loader.style.display = 'none';
     } else {
         iframePlayer.style.display = 'block';
@@ -136,9 +232,18 @@ function handleSelection(dataId){
         iframePlayer.onload = () => loader.style.display = 'none';
     }
 }
+
+// Adjust UI when entering/exiting fullscreen
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+        // You can add logic here if you want things to change when exiting
+    }
+});
 </script>
+
 </body>
 </html>
+
 
 
 
