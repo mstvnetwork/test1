@@ -41,7 +41,6 @@ body{
   margin-bottom:15px;
 }
 
-/* Ribbon */
 .ribbon-wrapper{
   position:relative;
   max-width:1200px;
@@ -61,7 +60,6 @@ body{
 .channel-ribbon-inner{
   display:flex;
   gap:20px;
-  will-change:transform;
   position:absolute;
   top:0;
   left:0;
@@ -77,7 +75,6 @@ body{
   cursor:pointer;
 }
 
-/* Netflix style cards */
 .logo-card{
   flex:0 0 150px;
   background:#181A1F;
@@ -126,17 +123,10 @@ body{
   background:#ff3c3c;
   border-radius:50%;
   display:none;
-  animation:blink 1s infinite;
-}
-
-@keyframes blink{
-  0%,100%{opacity:1}
-  50%{opacity:.3}
 }
 
 .active .live-dot{display:block}
 
-/* Player */
 #fullscreen-wrapper{
   position:relative;
   width:100%;
@@ -153,11 +143,6 @@ body{
   border-radius:18px;
   overflow:hidden;
   box-shadow:0 25px 80px rgba(0,0,0,.9);
-  transition:transform .3s ease;
-}
-
-.player-container:hover{
-  transform:scale(1.01);
 }
 
 .player-container video,
@@ -170,19 +155,6 @@ body{
   height:100%;
 }
 
-/* Cinematic gradient */
-#cinema-gradient{
-  position:absolute;
-  bottom:0;
-  left:0;
-  width:100%;
-  height:30%;
-  background:linear-gradient(to top, rgba(0,0,0,.85), transparent);
-  pointer-events:none;
-  z-index:5;
-}
-
-/* Optional brand mask */
 #brand-mask{
   position:absolute;
   top:0;
@@ -194,31 +166,6 @@ body{
   display:none;
 }
 
-/* Placeholder */
-#placeholder-image{
-  background:linear-gradient(135deg,#0d0d2b 0%,#1a1d40 50%,#0f1115 100%);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  z-index:5;
-  text-align:center;
-}
-
-.placeholder-title{
-  font-size:clamp(1.8rem,4vw,3rem);
-  font-weight:800;
-  color:#fff;
-  letter-spacing:2px;
-}
-
-.placeholder-sub{
-  font-size:clamp(.9rem,2vw,1.2rem);
-  color:#90EE90;
-  font-weight:600;
-}
-
-/* Loader */
 .loader-container{
   position:absolute;
   top:50%;
@@ -241,24 +188,11 @@ body{
   0%{transform:rotate(0)}
   100%{transform:rotate(360deg)}
 }
-
-/* Footer */
-footer{
-  background:#0B0C10;
-  border-top:2px solid #90EE90;
-  padding:60px 20px;
-  text-align:center;
-}
 </style>
 </head>
 <body>
 
 <div class="title-3d">AAINA DTH FREE</div>
-<div class="scrolling-news">
-<marquee scrollamount="6">
-Aaina DTH Free | Ad-Free Streaming | TV Channels with Entertainment for All Ages
-</marquee>
-</div>
 
 <div class="channel-heading">Scroll to select channels</div>
 
@@ -282,11 +216,9 @@ sandbox="allow-scripts allow-same-origin allow-forms allow-presentation">
 </iframe>
 
 <div id="brand-mask"></div>
-<div id="cinema-gradient"></div>
 
-<div id="placeholder-image">
-<div class="placeholder-title">MSTV NETWORK</div>
-<div class="placeholder-sub">Click on channel icon to watch</div>
+<div id="placeholder-image" style="display:flex;align-items:center;justify-content:center;color:white;">
+Click on channel icon to watch
 </div>
 
 <div class="loader-container" id="loader">
@@ -296,15 +228,9 @@ sandbox="allow-scripts allow-same-origin allow-forms allow-presentation">
 </div>
 </div>
 
-<footer>
-<p>© <span id="year"></span> MSTV Network</p>
-</footer>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest" defer></script>
-
-<script defer>
-document.getElementById('year').textContent=new Date().getFullYear();
-
+<script>
 const videoPlayer=document.getElementById('video-player');
 const iframePlayer=document.getElementById('iframe-player');
 const loader=document.getElementById('loader');
@@ -315,13 +241,21 @@ const brandMask=document.getElementById('brand-mask');
 let hlsInstance=null;
 
 const channelsData=[
-{name:"Star Sports",type:"iframe",url:"https://streamcrichd.com/update/star.php",logo:"cb2f146ca360b682048f5cdb75f557ec.jpg"},
-{name:"Bollywood Classic HD",type:"hls",url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",logo:"wlo_logo_200_200.jpg"},
-{name:"Zee Cinema",type:"iframe",url:"https://freeways.hosthampster.com/zeecinema.html?autoplay=1",logo:"wlo_logo_200_200.jpg"}
+{
+name:"AnyM3U8 T Sports",
+type:"iframe",
+url:"https://anym3u8player.com/tv/p.php?url=https%3A%2F%2Ftvsen7.aynascope.net%2Ftsports-hd%2Ftracks-v1a1%2Fmono.ts.m3u8%3Fe%3D1771387260%26token%3Df7ae36e5380c6f77f084487443c39bb3%26u%3Dee5437a7-c16b-4700-b317-a41b77d5cba9",
+logo:"wlo_logo_200_200.jpg"
+},
+{
+name:"Test HLS",
+type:"hls",
+url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+logo:"wlo_logo_200_200.jpg"
+}
 ];
 
 function buildRibbon(){
-  ribbonInner.innerHTML='';
   channelsData.forEach((ch,i)=>{
     const card=document.createElement('div');
     card.className='logo-card';
@@ -349,7 +283,6 @@ function stopAllPlayback(){
 function handleSelection(index){
   const channel=channelsData[index];
   stopAllPlayback();
-
   loader.style.display='flex';
   placeholder.style.display='none';
 
@@ -358,8 +291,6 @@ function handleSelection(index){
 
   if(channel.type==='hls'){
     videoPlayer.style.display='block';
-    brandMask.style.display='none';
-
     if(Hls.isSupported()){
       hlsInstance=new Hls();
       hlsInstance.loadSource(channel.url);
@@ -377,22 +308,14 @@ function handleSelection(index){
   }
 }
 
-let scrollX=0;
-function animateRibbon(){
-  scrollX-=0.3;
-  if(Math.abs(scrollX)>=ribbonInner.scrollWidth/2) scrollX=0;
-  ribbonInner.style.transform=`translateX(${scrollX}px)`;
-  requestAnimationFrame(animateRibbon);
-}
-requestAnimationFrame(animateRibbon);
-
 function scrollRibbon(distance){
-  scrollX+=distance;
+  ribbonInner.scrollLeft+=distance;
 }
 </script>
 
 </body>
 </html>
+
 
 
 
