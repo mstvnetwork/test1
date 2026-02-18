@@ -1,334 +1,56 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MSTV Network | Premium DTH</title>
-
+<title>MSTV Test Channel</title>
 <style>
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  color:#E0E0E0;
+body {
   background:#0B0C10;
-  overflow-x:hidden;
-}
-
-.title-3d{
-  font-size:clamp(1.8rem,4vw,3.5rem);
-  text-align:center;
-  margin:30px 0 10px;
   color:#FFF;
-  font-weight:800;
-  letter-spacing:2px;
-}
-
-.scrolling-news{
-  background:#14161A;
-  color:#90EE90;
-  padding:12px 0;
-  border-top:1px solid #222;
-  border-bottom:1px solid #222;
-  margin-bottom:20px;
-  font-weight:600;
-}
-
-.channel-heading{
-  text-align:center;
-  font-size:14px;
-  color:#90EE90;
-  font-weight:600;
-  margin-bottom:15px;
-}
-
-.ribbon-wrapper{
-  position:relative;
-  max-width:1200px;
-  margin:0 auto 40px;
+  font-family:Arial, sans-serif;
   display:flex;
+  flex-direction:column;
   align-items:center;
-  gap:10px;
+  justify-content:center;
+  height:100vh;
+  margin:0;
 }
 
-.channel-ribbon{
-  overflow:hidden;
-  position:relative;
-  width:100%;
-  height:110px;
-}
-
-.channel-ribbon-inner{
-  display:flex;
-  gap:20px;
-  position:absolute;
-  top:0;
-  left:0;
-}
-
-.nav-btn{
-  background:#14161A;
-  border:1px solid #222;
-  color:#90EE90;
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  cursor:pointer;
-}
-
-.logo-card{
-  flex:0 0 150px;
-  background:#181A1F;
-  border:1px solid #222;
-  border-radius:14px;
-  padding:14px;
-  text-align:center;
-  cursor:pointer;
-  position:relative;
-  transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
-}
-
-.logo-card:hover{
-  transform:scale(1.1);
-  box-shadow:0 20px 40px rgba(0,0,0,.7);
-  border-color:#90EE90;
-  z-index:2;
-}
-
-.logo-card.active{
-  border-color:#90EE90;
-  background:rgba(144,238,144,.08);
-  box-shadow:0 0 20px rgba(144,238,144,.4);
-}
-
-.logo-card img{
-  width:100%;
-  height:60px;
-  object-fit:contain;
-}
-
-.logo-card span{
-  display:block;
-  font-size:11px;
-  margin-top:8px;
-  color:#AAA;
+button {
+  background:#90EE90;
+  border:none;
+  padding:15px 30px;
+  font-size:16px;
   font-weight:600;
+  border-radius:8px;
+  cursor:pointer;
+  transition:transform .2s ease;
 }
 
-.live-dot{
-  position:absolute;
-  top:10px;
-  right:10px;
-  width:8px;
-  height:8px;
-  background:#ff3c3c;
-  border-radius:50%;
-  display:none;
-}
-
-.active .live-dot{display:block}
-
-#fullscreen-wrapper{
-  position:relative;
-  width:100%;
-  max-width:1200px;
-  margin:0 auto 20px;
-  padding:0 20px;
-}
-
-.player-container{
-  position:relative;
-  width:100%;
-  padding-top:56.25%;
-  background:#000;
-  border-radius:18px;
-  overflow:hidden;
-  box-shadow:0 25px 80px rgba(0,0,0,.9);
-}
-
-.player-container video,
-#iframe-player,
-#placeholder-image{
-  position:absolute;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-}
-
-#brand-mask{
-  position:absolute;
-  top:0;
-  left:0;
-  width:100%;
-  height:60px;
-  background:#000;
-  z-index:15;
-  display:none;
-}
-
-.loader-container{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  display:none;
-  z-index:20;
-}
-
-.spinner{
-  width:60px;
-  height:60px;
-  border:4px solid rgba(255,255,255,.1);
-  border-top:4px solid #E50914;
-  border-radius:50%;
-  animation:spin .8s linear infinite;
-}
-
-@keyframes spin{
-  0%{transform:rotate(0)}
-  100%{transform:rotate(360deg)}
+button:hover {
+  transform:scale(1.05);
 }
 </style>
 </head>
 <body>
 
-<div class="title-3d">AAINA DTH FREE</div>
+<h1>MSTV Test Channel</h1>
+<p>Click the button below to watch the channel in a new window:</p>
 
-<div class="channel-heading">Scroll to select channels</div>
-
-<div class="ribbon-wrapper">
-<button class="nav-btn" onclick="scrollRibbon(-200)">⬅️</button>
-<div class="channel-ribbon">
-<div class="channel-ribbon-inner" id="ribbon-inner"></div>
-</div>
-<button class="nav-btn" onclick="scrollRibbon(200)">➡️</button>
-</div>
-
-<div id="fullscreen-wrapper">
-<div class="player-container">
-
-<video id="video-player" playsinline muted controls preload="metadata" style="display:none;"></video>
-
-<iframe id="iframe-player"
-style="display:none;width:100%;height:100%;"
-allow="autoplay; fullscreen; encrypted-media"
-sandbox="allow-scripts allow-same-origin allow-forms allow-presentation">
-</iframe>
-
-<div id="brand-mask"></div>
-
-<div id="placeholder-image" style="display:flex;align-items:center;justify-content:center;color:white;">
-Click on channel icon to watch
-</div>
-
-<div class="loader-container" id="loader">
-<div class="spinner"></div>
-</div>
-
-</div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<button onclick="openChannel()">Watch Astro Channel</button>
 
 <script>
-const videoPlayer=document.getElementById('video-player');
-const iframePlayer=document.getElementById('iframe-player');
-const loader=document.getElementById('loader');
-const placeholder=document.getElementById('placeholder-image');
-const ribbonInner=document.getElementById('ribbon-inner');
-const brandMask=document.getElementById('brand-mask');
-
-let hlsInstance=null;
-
-const channelsData=[
-{
-name:"AnyM3U8 T Sports",
-type:"iframe",
-url:"https://anym3u8player.com/tv/p.php?url=https%3A%2F%2Ftvsen7.aynascope.net%2Ftsports-hd%2Ftracks-v1a1%2Fmono.ts.m3u8%3Fe%3D1771387260%26token%3Df7ae36e5380c6f77f084487443c39bb3%26u%3Dee5437a7-c16b-4700-b317-a41b77d5cba9",
-logo:"wlo_logo_200_200.jpg"
-},
-{
-name:"Test HLS",
-type:"hls",
-url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
-logo:"wlo_logo_200_200.jpg"
-}
-];
-
-function buildRibbon(){
-  channelsData.forEach((ch,i)=>{
-    const card=document.createElement('div');
-    card.className='logo-card';
-    card.innerHTML=`<div class="live-dot"></div><img src="${ch.logo}"><span>${ch.name}</span>`;
-    card.onclick=()=>handleSelection(i);
-    ribbonInner.appendChild(card);
-  });
-}
-buildRibbon();
-
-function stopAllPlayback(){
-  videoPlayer.pause();
-  videoPlayer.removeAttribute('src');
-  videoPlayer.load();
-  videoPlayer.style.display='none';
-
-  iframePlayer.src='';
-  iframePlayer.style.display='none';
-
-  brandMask.style.display='none';
-
-  if(hlsInstance){ hlsInstance.destroy(); hlsInstance=null; }
-}
-
-function handleSelection(index){
-  const channel=channelsData[index];
-  stopAllPlayback();
-  loader.style.display='flex';
-  placeholder.style.display='none';
-
-  document.querySelectorAll('.logo-card').forEach(c=>c.classList.remove('active'));
-  ribbonInner.children[index].classList.add('active');
-
-  if(channel.type==='hls'){
-    videoPlayer.style.display='block';
-    if(Hls.isSupported()){
-      hlsInstance=new Hls();
-      hlsInstance.loadSource(channel.url);
-      hlsInstance.attachMedia(videoPlayer);
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{
-        loader.style.display='none';
-        videoPlayer.play();
-      });
-    }
-  }else{
-    iframePlayer.style.display='block';
-    iframePlayer.src=channel.url;
-    brandMask.style.display='block';
-    iframePlayer.onload=()=>loader.style.display='none';
-  }
-}
-
-function scrollRibbon(distance){
-  ribbonInner.scrollLeft+=distance;
+function openChannel() {
+  const url = "https://criccoder.pages.dev/astro.m3u8";
+  // Open in new window/tab
+  window.open(url, "_blank", "width=900,height=600,scrollbars=yes,resizable=yes");
 }
 </script>
 
 </body>
 </html>
-
-
-
-
-    
-
-
-<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width:100%;">
-    <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
-        webkitAllowFullScreen mozallowfullscreen allowfullscreen 
-        width="640" height="360" frameborder="0" allow="autoplay" 
-        src="https://anym3u8player.com/tv/p.php?url=https%3A%2F%2Ftvsen7.aynascope.net%2Ftsports-hd%2Ftracks-v1a1%2Fmono.ts.m3u8%3Fe%3D1771387260%26token%3Df7ae36e5380c6f77f084487443c39bb3%26u%3Dee5437a7-c16b-4700-b317-a41b77d5cba9">
-    </iframe>
-</div>
 
 
 
