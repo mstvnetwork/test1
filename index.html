@@ -1,21 +1,399 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cloudflare Analytics Test</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSTV Network | Premium DTH</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  color:#E0E0E0;
+  background:#0B0C10;
+  overflow-x:hidden;
+}
+
+.title-3d{
+  font-size:clamp(1.8rem,4vw,3.5rem);
+  text-align:center;
+  margin:30px 0 10px;
+  color:#FFF;
+  font-weight:800;
+  letter-spacing:2px;
+}
+
+.scrolling-news{
+  background:#14161A;
+  color:#90EE90;
+  padding:12px 0;
+  border-top:1px solid #222;
+  border-bottom:1px solid #222;
+  margin-bottom:20px;
+  font-weight:600;
+}
+
+.channel-heading{
+  text-align:center;
+  font-size:14px;
+  color:#90EE90;
+  font-weight:600;
+  margin-bottom:15px;
+}
+
+/* Ribbon */
+.ribbon-wrapper{
+  position:relative;
+  max-width:1200px;
+  margin:0 auto 40px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.channel-ribbon{
+  overflow:hidden;
+  position:relative;
+  width:100%;
+  height:110px;
+}
+
+.channel-ribbon-inner{
+  display:flex;
+  gap:20px;
+  will-change:transform;
+  position:absolute;
+  top:0;
+  left:0;
+}
+
+.nav-btn{
+  background:#14161A;
+  border:1px solid #222;
+  color:#90EE90;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  cursor:pointer;
+}
+
+/* Netflix style cards */
+.logo-card{
+  flex:0 0 150px;
+  background:#181A1F;
+  border:1px solid #222;
+  border-radius:14px;
+  padding:14px;
+  text-align:center;
+  cursor:pointer;
+  position:relative;
+  transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+.logo-card:hover{
+  transform:scale(1.1);
+  box-shadow:0 20px 40px rgba(0,0,0,.7);
+  border-color:#90EE90;
+  z-index:2;
+}
+
+.logo-card.active{
+  border-color:#90EE90;
+  background:rgba(144,238,144,.08);
+  box-shadow:0 0 20px rgba(144,238,144,.4);
+}
+
+.logo-card img{
+  width:100%;
+  height:60px;
+  object-fit:contain;
+}
+
+.logo-card span{
+  display:block;
+  font-size:11px;
+  margin-top:8px;
+  color:#AAA;
+  font-weight:600;
+}
+
+.live-dot{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:8px;
+  height:8px;
+  background:#ff3c3c;
+  border-radius:50%;
+  display:none;
+  animation:blink 1s infinite;
+}
+
+@keyframes blink{
+  0%,100%{opacity:1}
+  50%{opacity:.3}
+}
+
+.active .live-dot{display:block}
+
+/* Player */
+#fullscreen-wrapper{
+  position:relative;
+  width:100%;
+  max-width:1200px;
+  margin:0 auto 20px;
+  padding:0 20px;
+}
+
+.player-container{
+  position:relative;
+  width:100%;
+  padding-top:56.25%;
+  background:#000;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 25px 80px rgba(0,0,0,.9);
+  transition:transform .3s ease;
+}
+
+.player-container:hover{
+  transform:scale(1.01);
+}
+
+.player-container video,
+#iframe-player,
+#placeholder-image{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+}
+
+/* Cinematic gradient */
+#cinema-gradient{
+  position:absolute;
+  bottom:0;
+  left:0;
+  width:100%;
+  height:30%;
+  background:linear-gradient(to top, rgba(0,0,0,.85), transparent);
+  pointer-events:none;
+  z-index:5;
+}
+
+/* Optional brand mask */
+#brand-mask{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:60px;
+  background:#000;
+  z-index:15;
+  display:none;
+}
+
+/* Placeholder */
+#placeholder-image{
+  background:linear-gradient(135deg,#0d0d2b 0%,#1a1d40 50%,#0f1115 100%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:5;
+  text-align:center;
+}
+
+.placeholder-title{
+  font-size:clamp(1.8rem,4vw,3rem);
+  font-weight:800;
+  color:#fff;
+  letter-spacing:2px;
+}
+
+.placeholder-sub{
+  font-size:clamp(.9rem,2vw,1.2rem);
+  color:#90EE90;
+  font-weight:600;
+}
+
+/* Loader */
+.loader-container{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  display:none;
+  z-index:20;
+}
+
+.spinner{
+  width:60px;
+  height:60px;
+  border:4px solid rgba(255,255,255,.1);
+  border-top:4px solid #E50914;
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+  0%{transform:rotate(0)}
+  100%{transform:rotate(360deg)}
+}
+
+/* Footer */
+footer{
+  background:#0B0C10;
+  border-top:2px solid #90EE90;
+  padding:60px 20px;
+  text-align:center;
+}
+</style>
 </head>
 <body>
 
-<h2>Cloudflare Beacon Test Page</h2>
-<p>If analytics is working, this page will register a visit.</p>
+<div class="title-3d">AAINA DTH FREE</div>
+<div class="scrolling-news">
+<marquee scrollamount="6">
+Aaina DTH Free | Ad-Free Streaming | TV Channels with Entertainment for All Ages
+</marquee>
+</div>
 
-<script defer
-  src="https://static.cloudflareinsights.com/beacon.min.js"
-  data-cf-beacon='{"token": "a55d3cb3b3314a5eaabaee9d8322ab5b"}'>
+<div class="channel-heading">Scroll to select channels</div>
+
+<div class="ribbon-wrapper">
+<button class="nav-btn" onclick="scrollRibbon(-200)">⬅️</button>
+<div class="channel-ribbon">
+<div class="channel-ribbon-inner" id="ribbon-inner"></div>
+</div>
+<button class="nav-btn" onclick="scrollRibbon(200)">➡️</button>
+</div>
+
+<div id="fullscreen-wrapper">
+<div class="player-container">
+
+<video id="video-player" playsinline muted controls preload="metadata" style="display:none;"></video>
+
+<iframe id="iframe-player"
+style="display:none;width:100%;height:100%;"
+allow="autoplay; fullscreen; encrypted-media"
+sandbox="allow-scripts allow-same-origin allow-forms allow-presentation">
+</iframe>
+
+<div id="brand-mask"></div>
+<div id="cinema-gradient"></div>
+
+<div id="placeholder-image">
+<div class="placeholder-title">MSTV NETWORK</div>
+<div class="placeholder-sub">Click on channel icon to watch</div>
+</div>
+
+<div class="loader-container" id="loader">
+<div class="spinner"></div>
+</div>
+
+</div>
+</div>
+
+<footer>
+<p>© <span id="year"></span> MSTV Network</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest" defer></script>
+
+<script defer>
+document.getElementById('year').textContent=new Date().getFullYear();
+
+const videoPlayer=document.getElementById('video-player');
+const iframePlayer=document.getElementById('iframe-player');
+const loader=document.getElementById('loader');
+const placeholder=document.getElementById('placeholder-image');
+const ribbonInner=document.getElementById('ribbon-inner');
+const brandMask=document.getElementById('brand-mask');
+
+let hlsInstance=null;
+
+const channelsData=[
+{name:"Star Sports",type:"iframe",url:"https://streamcrichd.com/update/star.php",logo:"cb2f146ca360b682048f5cdb75f557ec.jpg"},
+{name:"Bollywood Classic HD",type:"hls",url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",logo:"wlo_logo_200_200.jpg"},
+{name:"Zee Cinema",type:"iframe",url:"https://freeways.hosthampster.com/zeecinema.html?autoplay=1",logo:"wlo_logo_200_200.jpg"}
+];
+
+function buildRibbon(){
+  ribbonInner.innerHTML='';
+  channelsData.forEach((ch,i)=>{
+    const card=document.createElement('div');
+    card.className='logo-card';
+    card.innerHTML=`<div class="live-dot"></div><img src="${ch.logo}"><span>${ch.name}</span>`;
+    card.onclick=()=>handleSelection(i);
+    ribbonInner.appendChild(card);
+  });
+}
+buildRibbon();
+
+function stopAllPlayback(){
+  videoPlayer.pause();
+  videoPlayer.removeAttribute('src');
+  videoPlayer.load();
+  videoPlayer.style.display='none';
+
+  iframePlayer.src='';
+  iframePlayer.style.display='none';
+
+  brandMask.style.display='none';
+
+  if(hlsInstance){ hlsInstance.destroy(); hlsInstance=null; }
+}
+
+function handleSelection(index){
+  const channel=channelsData[index];
+  stopAllPlayback();
+
+  loader.style.display='flex';
+  placeholder.style.display='none';
+
+  document.querySelectorAll('.logo-card').forEach(c=>c.classList.remove('active'));
+  ribbonInner.children[index].classList.add('active');
+
+  if(channel.type==='hls'){
+    videoPlayer.style.display='block';
+    brandMask.style.display='none';
+
+    if(Hls.isSupported()){
+      hlsInstance=new Hls();
+      hlsInstance.loadSource(channel.url);
+      hlsInstance.attachMedia(videoPlayer);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{
+        loader.style.display='none';
+        videoPlayer.play();
+      });
+    }
+  }else{
+    iframePlayer.style.display='block';
+    iframePlayer.src=channel.url;
+    brandMask.style.display='block';
+    iframePlayer.onload=()=>loader.style.display='none';
+  }
+}
+
+let scrollX=0;
+function animateRibbon(){
+  scrollX-=0.3;
+  if(Math.abs(scrollX)>=ribbonInner.scrollWidth/2) scrollX=0;
+  ribbonInner.style.transform=`translateX(${scrollX}px)`;
+  requestAnimationFrame(animateRibbon);
+}
+requestAnimationFrame(animateRibbon);
+
+function scrollRibbon(distance){
+  scrollX+=distance;
+}
 </script>
 
 </body>
 </html>
+
 
 
     
