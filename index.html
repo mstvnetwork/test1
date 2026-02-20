@@ -162,12 +162,16 @@
     }
 
     function triggerFullscreen() {
-        // Must be called directly after a user click/change event
-        const fs = playerContainer.requestFullscreen || playerContainer.webkitRequestFullscreen || playerContainer.mozRequestFullScreen || playerContainer.msRequestFullscreen;
-        if (fs) {
-            fs.call(playerContainer).catch(err => console.log("Fullscreen postponed: ", err.message));
-        }
-    }
+  const el = playerContainer;
+
+  if (el.requestFullscreen) {
+    el.requestFullscreen().catch(() => {});
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen();
+  } else if (el.msRequestFullscreen) {
+    el.msRequestFullscreen();
+  }
+}
 
     function playChannel(channel) {
         if (!channel) { 
@@ -249,6 +253,6 @@
           s.async = true;
           document.head.appendChild(s);
       }
-   </script>
-</body>
+      </script>
+  </body>
 </html>
