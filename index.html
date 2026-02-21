@@ -328,10 +328,12 @@ function playChannel(channel) {
 
   if (!channel) { placeholder.style.display = 'block'; showLoading(false); return; }
 
-  if (channel.type === 'hls') {
-    videoPlayer.style.display = 'block';
-    videoPlayer.muted = true; // needed for autoplay
-    videoPlayer.autoplay = true;
+  if(channel.type==='hls' && videoPlayer){
+        videoPlayer.style.display='block';
+        videoPlayer.muted = true;
+        videoPlayer.controls = true;
+        videoPlayer.autoplay = true;
+
 
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
       hlsInstance = new Hls();
