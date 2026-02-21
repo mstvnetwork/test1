@@ -160,15 +160,15 @@ select:hover {
 }
 
 .player-container iframe,
-.player-container video,
-#placeholder-image {
+.player-container video {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   border-radius: 16px;
-  object-fit: cover;
+  object-fit: contain; /* was cover; preserves full 16:9 without cropping */
+  background: black;   /* fallback if video is smaller than container */
 }
 
 /* Live Stamp */
