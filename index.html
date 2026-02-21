@@ -368,8 +368,7 @@ function playChannel(channel) {
     else if(channel.type==='iframe' && iframePlayer){
         iframePlayer.style.display='block';
         iframePlayer.src = channel.url;
-        iframePlayer.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
-        iframePlayer.setAttribute('referrerpolicy','no-referrer');
+        
     }
 }
 
@@ -410,5 +409,3 @@ if(select){
 // Show placeholder initially
 stopAllPlayback();
 </script>
-</body>
-</html>
