@@ -166,7 +166,7 @@ select:hover {
   width: 100%;
   height: 100%;
   border-radius: 16px;
-  object-fit: contain; /* preserve 16:9 in fullscreen */
+  object-fit: contain; /* preserves 16:9 in fullscreen without cropping */
   background: black;
 }
 
@@ -214,18 +214,6 @@ select:hover {
   z-index: 15;
   text-align: center;
   box-shadow: 0 4px 12px rgba(0,255,200,0.3);
-}
-
-/* Unmute Hint Overlay */
-.unmute-hint {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  color: #00FFC8;
-  font-size: 0.9rem;
-  text-shadow: 0 0 4px #000;
-  z-index: 1000;
-  display: none;
 }
 
 /* Footer */
@@ -290,7 +278,6 @@ select:hover {
     <img id="placeholder-image" src="Design-Studio-2025-01-22 (1).png" alt="Stream Placeholder" />
     <div class="live-stamp" id="live-stamp" style="display:none;">MSTV NETWORK</div>
     <div class="loading-indicator" id="loading">Loading stream...</div>
-    <div class="unmute-hint" id="unmute-hint">Tap the unmute icon to hear audio</div>
   </div>
 
 </div>
@@ -312,7 +299,6 @@ const placeholder = document.getElementById('placeholder-image');
 const loading = document.getElementById('loading');
 const liveStamp = document.getElementById('live-stamp');
 const playerContainer = document.getElementById('player-container');
-const unmuteHint = document.getElementById('unmute-hint');
 
 let hlsInstance = null;
 let channelsData = [];
@@ -320,14 +306,12 @@ let lastKnownJsonContent = null;
 const JSON_URL = "./channels.json";
 
 function showLoading(show) { loading.style.display = show ? 'block' : 'none'; }
-function showUnmuteHint(show) { unmuteHint.style.display = show ? 'block' : 'none'; }
 
 function stopAllPlayback() {
   if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
   videoPlayer.pause(); videoPlayer.style.display = 'none';
   iframePlayer.src = ''; iframePlayer.style.display = 'none';
   liveStamp.style.display = 'none';
-  showUnmuteHint(false);
 }
 
 function triggerFullscreen(element) {
@@ -346,7 +330,7 @@ function playChannel(channel) {
 
   if (channel.type === 'hls') {
     videoPlayer.style.display = 'block';
-    videoPlayer.muted = true;
+    videoPlayer.muted = true; // needed for autoplay
     videoPlayer.autoplay = true;
 
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -357,7 +341,6 @@ function playChannel(channel) {
         videoPlayer.play().then(() => {
           showLoading(false);
           liveStamp.style.display = 'block';
-          showUnmuteHint(true);
         });
       });
     } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
@@ -365,7 +348,6 @@ function playChannel(channel) {
       videoPlayer.play().then(() => {
         showLoading(false);
         liveStamp.style.display = 'block';
-        showUnmuteHint(true);
       });
     }
   } else if (channel.type === 'iframe') {
@@ -408,5 +390,5 @@ setInterval(fetchChannelsJson, 15000);
 </script>
 </body>
 </html>
-  
+
 
