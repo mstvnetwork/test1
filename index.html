@@ -277,9 +277,8 @@ body { display: flex; flex-direction: column; align-items: center; }
     <p><a href="#"></a> | <a href="#"></a> | <a href="#"></a></p>
   </div>
 </footer>
-<!-- HLS.js -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
+<!-- HLS.js -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -296,7 +295,7 @@ const channelsData = [
     {name:"Bollywood Classics Hd",type:"hls",url:"https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/6b126777-7e9a-444f-9845-48fa1d4ed694/1.m3u8",keywords:"movies, old, hindi"},
     {name:"Zee Cinema",type:"iframe",url:"https://freeways.hosthampster.com/zeecinema.html?autoplay=1",keywords:"movies, zee, cinema"},
     {name:"Colors Hd", type:"iframe", url:"https://cdn.stmify.com/embed-free/v1/colors-hd-in-jw", keywords:"colors, drama, tv"},
-    {name:"Sony Entertainment", type:"iframe", url:"https://cdn.stmify.com/embed-free/v1/sony-entertainment-television-hd-in-jw", keywords: "Sony, drama, tv"}
+    {name:"Sony Entertainment", type:"iframe", url:"//cdn.stmify.com/embed-free/v1/sony-entertainment-television-hd-in-jw", keywords: "Sony, drama, tv"}
 ];
 
 // DOM Elements
@@ -307,9 +306,14 @@ const placeholder = document.getElementById('placeholder-image');
 const liveStamp = document.getElementById('live-stamp');
 const playerContainer = document.getElementById('player-container');
 let hlsInstance = null;
-let currentChannelList = channelsData;
+let currentChannelList = channelsData; // For filtered search
 
-// Stop all playback
+// Show/hide loading (optional spinner)
+function showLoading(show) {
+    // Implement if needed
+}
+
+// Stop all playback and show placeholder
 function stopAllPlayback() {
     if(hlsInstance){ hlsInstance.destroy(); hlsInstance=null; }
 
@@ -323,15 +327,15 @@ function stopAllPlayback() {
     if(iframePlayer){
         iframePlayer.src = '';
         iframePlayer.style.display = 'none';
-        iframePlayer.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
-        iframePlayer.setAttribute('referrerpolicy','no-referrer');
+        iframePlayer.removeAttribute('sandbox');
+        iframePlayer.removeAttribute('referrerpolicy');
     }
 
     if (placeholder) placeholder.style.display = 'flex';
-    if (liveStamp) liveStamp.style.display='none';
+    if (liveStamp) liveStamp.style.display = 'none';
 }
 
-// Fullscreen
+// Fullscreen trigger for all channels
 function triggerFullscreen() {
     if(!playerContainer) return;
     if(playerContainer.requestFullscreen) playerContainer.requestFullscreen().catch(()=>{});
@@ -343,9 +347,12 @@ function triggerFullscreen() {
 function playChannel(channel) {
     if(!channel){ stopAllPlayback(); return; }
 
+    showLoading(true);
     stopAllPlayback();
+
     if (placeholder) placeholder.style.display = 'none';
-    if (liveStamp) liveStamp.style.display='block';
+    if (liveStamp) liveStamp.style.display = 'block';
+
     triggerFullscreen();
 
     if(channel.type==='hls' && videoPlayer){
@@ -358,21 +365,45 @@ function playChannel(channel) {
             hlsInstance = new Hls();
             hlsInstance.loadSource(channel.url);
             hlsInstance.attachMedia(videoPlayer);
-            hlsInstance.on(Hls.Events.MANIFEST_PARSED, ()=>{ videoPlayer.play().catch(()=>{}); });
-            hlsInstance.on(Hls.Events.ERROR, (event,data)=>{ if(data.fatal){ hlsInstance.destroy(); } });
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, ()=>{
+                videoPlayer.play().catch(()=>{});
+                showLoading(false);
+                if(liveStamp) liveStamp.style.display='block';
+            });
+            hlsInstance.on(Hls.Events.ERROR, (event,data)=>{
+                if(data.fatal){ hlsInstance.destroy(); showLoading(false); }
+            });
         } else if(videoPlayer.canPlayType('application/vnd.apple.mpegurl')){
             videoPlayer.src = channel.url;
             videoPlayer.play().catch(()=>{});
+            showLoading(false);
         }
     }
     else if(channel.type==='iframe' && iframePlayer){
         iframePlayer.style.display='block';
+        iframePlayer.src = '';
+        iframePlayer.removeAttribute('sandbox');
+        iframePlayer.removeAttribute('referrerpolicy');
+
+        // Per-channel sandbox/referrer
+        if(channel.name==='Zee Cinema'){
+            iframePlayer.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
+            iframePlayer.setAttribute('referrerpolicy','no-referrer');
+        } else if(channel.name==='Colors Hd'){
+            iframePlayer.removeAttribute('sandbox');
+            iframePlayer.removeAttribute('referrerpolicy');
+        } else {
+            iframePlayer.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
+            iframePlayer.setAttribute('referrerpolicy','no-referrer');
+        }
+
         iframePlayer.src = channel.url;
-        
+        showLoading(false);
+        if(liveStamp) liveStamp.style.display='block';
     }
 }
 
-// Dropdown
+// Populate dropdown options
 function renderOptions(data){
     currentChannelList = data;
     select.innerHTML = '<option value="">👉 Click here to select channel</option>';
@@ -383,9 +414,11 @@ function renderOptions(data){
         select.appendChild(opt);
     });
 }
+
+// Initialize dropdown
 renderOptions(channelsData);
 
-// Search
+// Search filter (optional)
 const searchInput = document.getElementById('channel-search');
 if(searchInput){
     searchInput.addEventListener('input', (e)=>{
@@ -398,7 +431,7 @@ if(searchInput){
     });
 }
 
-// Selection
+// Dropdown selection
 if(select){
     select.addEventListener('change', ()=>{
         const val = select.value;
