@@ -87,49 +87,51 @@ button:hover {
 </div>
 
 <script>
-let currentTop = -430;
-let currentLeft = -47;
-let locked = false;
-const step = 10;
+document.addEventListener("DOMContentLoaded", function () {
 
-function move(direction) {
-    if (locked) return;
+    let currentTop = -430;
+    let currentLeft = -47;
+    let locked = false;
+    const step = 10;
 
-    switch(direction) {
-        case 'up': currentTop += step; break;
-        case 'down': currentTop -= step; break;
-        case 'left': currentLeft += step; break;
-        case 'right': currentLeft -= step; break;
+    const iframe = document.getElementById("main-iframe");
+
+    function applyPosition() {
+        iframe.style.top = currentTop + "px";
+        iframe.style.left = currentLeft + "px";
     }
 
-    const iframe = document.getElementById("main-iframe");
-    iframe.style.top = currentTop + "px";
-    iframe.style.left = currentLeft + "px";
-}
+    window.move = function(direction) {
+        if (locked) return;
 
-function lockView() {
-    locked = true;
+        switch(direction) {
+            case 'up': currentTop += step; break;
+            case 'down': currentTop -= step; break;
+            case 'left': currentLeft += step; break;
+            case 'right': currentLeft -= step; break;
+        }
 
-    const iframe = document.getElementById("main-iframe");
-    iframe.style.pointerEvents = "auto"; 
+        applyPosition();
+    };
 
-    alert(
-        "View Locked\n\n" +
-        "Final top: " + currentTop + "px\n" +
-        "Final left: " + currentLeft + "px\n\n" +
-        "You can now copy these values into CSS."
-    );
-}
-<script>
-const urlParams = new URLSearchParams(window.location.search);
-const isEmbed = urlParams.get("embed");
+    window.lockView = function() {
+        locked = true;
+        localStorage.setItem("playerTop", currentTop);
+        localStorage.setItem("playerLeft", currentLeft);
+        alert("View locked and saved.");
+    };
 
-if (isEmbed === "true") {
-    const controls = document.querySelector('.controls');
-    if (controls) controls.style.display = 'none';
-}
-</script>
+    // Load saved position
+    const savedTop = localStorage.getItem("playerTop");
+    const savedLeft = localStorage.getItem("playerLeft");
 
+    if (savedTop !== null && savedLeft !== null) {
+        currentTop = parseInt(savedTop);
+        currentLeft = parseInt(savedLeft);
+        applyPosition();
+    }
+
+});
 </script>
 </body>
 </html>
