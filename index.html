@@ -120,7 +120,13 @@ function lockView() {
         "You can now copy these values into CSS."
     );
 }
-</script>
+    <script>
+if (window.self !== window.top) {
+    // Page is inside an iframe
+    const controls = document.querySelector('.controls');
+    if (controls) controls.style.display = 'none';
+}
 
+</script>
 </body>
 </html>
