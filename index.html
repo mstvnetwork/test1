@@ -8,15 +8,15 @@
     <style>
         body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
         .player-container { position: relative; width: 100%; max-width: 1000px; background: #111; aspect-ratio: 16/9; }
-        video { width: 100%; height: 100%; display: block; pointer-events: none; }
+        video { width: 100%; height: 100%; display: block; pointer-events: none; outline: none; }
         
         #unmuteOverlay, #loader {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; color: white; background: rgba(0,0,0,0.8); cursor: pointer;
+            z-index: 100; color: white; background: rgba(0,0,0,0.9); cursor: pointer;
         }
         #loader { background: #000; cursor: default; }
-        .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -24,10 +24,12 @@
 
 <div class="player-container">
     <div id="loader"><div class="spinner"></div><p>Loading Stream...</p></div>
+    
     <video id="video" playsinline crossorigin="anonymous"></video>
+    
     <div id="unmuteOverlay" style="display:none;">
         <div style="font-size: 60px;">🔊</div>
-        <p>TAP TO START UNMUTED</p>
+        <p>CLICK TO WATCH UNMUTED</p>
     </div>
 </div>
 
@@ -36,17 +38,18 @@
     const overlay = document.getElementById('unmuteOverlay');
     const loader = document.getElementById('loader');
     
-    // THE SECRET: We proxy the manifest AND every segment inside it
+    // Config
     const proxy = 'https://corsproxy.io?';
     const rawUrl = 'https://s2.videoapne.to/hls/,bdohwwgc7bboxuzvta2p4fiit54tcdq7ymqlovnvic6mciioc35uxy4romsq,.urlset/master.m3u8';
     
     let lastPos = 0;
-    const blockedKeys =;
+    // FIXED: Added the actual key codes (32=Space, 37=Left, 39=Right)
+    const blockedKeys = [32, 37, 38, 39, 40];
 
     if (Hls.isSupported()) {
         const hls = new Hls({
-            // This forces HLS.js to use the proxy for every chunk of video
             xhrSetup: function(xhr, url) {
+                // Ensure segments are also proxied
                 if (!url.includes('corsproxy.io')) {
                     xhr.open('GET', proxy + encodeURIComponent(url), true);
                 }
@@ -58,26 +61,50 @@
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
             loader.style.display = 'none';
-            video.play().catch(() => { overlay.style.display = 'flex'; });
+            // Start playing unmuted
+            video.muted = false;
+            let playPromise = video.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    // If browser blocks unmuted autoplay, show the "Click to play" screen
+                    overlay.style.display = 'flex';
+                });
+            }
         });
 
         hls.on(Hls.Events.ERROR, (event, data) => {
-            if (data.fatal) hls.recoverMediaError();
+            if (data.fatal) {
+                console.log("HLS Error, attempting recovery...");
+                hls.recoverMediaError();
+            }
         });
     }
 
-    // LOCK: Prevent skipping forward
-    video.addEventListener('timeupdate', () => { if (!video.seeking) lastPos = video.currentTime; });
-    video.addEventListener('seeking', () => { if (video.currentTime > lastPos) video.currentTime = lastPos; });
+    // GDPLAYER LOCKS
+    // 1. Prevents scrubbing/skipping ahead
+    video.addEventListener('timeupdate', () => { 
+        if (!video.seeking) { lastPos = video.currentTime; }
+    });
 
-    // LOCK: Prevent keyboard shortcuts
-    window.addEventListener("keydown", (e) => { if (blockedKeys.includes(e.keyCode)) e.preventDefault(); });
+    video.addEventListener('seeking', () => { 
+        if (video.currentTime > lastPos) { 
+            video.currentTime = lastPos; 
+        } 
+    });
 
+    // 2. Blocks keyboard skip/pause keys
+    window.addEventListener("keydown", (e) => { 
+        if (blockedKeys.includes(e.keyCode)) { e.preventDefault(); } 
+    });
+
+    // 3. Unmute interaction handler
     overlay.addEventListener('click', () => {
         video.muted = false;
         video.play();
         overlay.style.display = 'none';
     });
 </script>
+
 </body>
 </html>
