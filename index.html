@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Single Iframe Split View</title>
+<title>Adjustable Split Player</title>
 
 <style>
 body {
@@ -17,48 +17,50 @@ body {
 /* Controls */
 .controls {
     margin: 15px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 button {
-    padding: 8px 12px;
+    padding: 8px 14px;
     background: #333;
     color: #fff;
     border: 1px solid #555;
     cursor: pointer;
 }
 
-/* Shared wrapper holding ONE iframe */
-.iframe-wrapper {
-    position: relative;
-    width: 800px;
-    height: 500px; /* total height = top + bottom */
-    overflow: hidden;
+button:hover {
+    background: #444;
 }
 
-/* The single iframe */
-#main-iframe {
-    position: absolute;
-    width: 1280px;
-    height: 1400px; /* big enough to include buttons below */
-    top: -430px;    /* adjust vertically */
-    left: -47px;    /* adjust horizontally */
-    border: none;
-}
-
-/* Top viewport */
+/* Top section */
 .top-view {
-    position: relative;
     width: 800px;
     height: 400px;
     overflow: hidden;
+    border: 2px solid #444;
+    border-bottom: none;
 }
 
-/* Bottom tube viewport */
+/* Bottom tube section */
 .bottom-view {
-    position: relative;
     width: 800px;
     height: 100px;
     overflow: hidden;
+    border: 2px solid #444;
+    border-top: none;
+}
+
+/* Shared iframe */
+#main-iframe {
+    position: relative;
+    width: 1280px;
+    height: 1400px;
+    top: -430px;     /* initial vertical offset */
+    left: -47px;     /* initial horizontal offset */
+    border: none;
+    pointer-events: auto;
 }
 </style>
 </head>
@@ -66,39 +68,57 @@ button {
 <body>
 
 <div class="controls">
-    <button onclick="moveUp()">⬆️</button>
-    <button onclick="moveDown()">⬇️</button>
+    <button onclick="move('up')">⬆️</button>
+    <button onclick="move('down')">⬇️</button>
+    <button onclick="move('left')">⬅️</button>
+    <button onclick="move('right')">➡️</button>
+    <button onclick="lockView()">🔒 Lock View</button>
 </div>
 
-<!-- Top Section -->
 <div class="top-view">
-    <div class="iframe-wrapper">
-        <iframe id="main-iframe"
-            src="https://tulnit.com/live/bollywood-colors/"
-            scrolling="no">
-        </iframe>
-    </div>
+    <iframe id="main-iframe"
+        src="https://tulnit.com/live/bollywood-plus/"
+        scrolling="no">
+    </iframe>
 </div>
 
-<!-- Bottom Tube Section -->
 <div class="bottom-view">
-    <div class="iframe-wrapper">
-        <!-- SAME iframe is visually overlapping -->
-    </div>
+    <!-- Same iframe visually continues downward -->
 </div>
 
 <script>
 let currentTop = -430;
+let currentLeft = -47;
+let locked = false;
 const step = 10;
 
-function moveUp() {
-    currentTop += step;
-    document.getElementById("main-iframe").style.top = currentTop + "px";
+function move(direction) {
+    if (locked) return;
+
+    switch(direction) {
+        case 'up': currentTop += step; break;
+        case 'down': currentTop -= step; break;
+        case 'left': currentLeft += step; break;
+        case 'right': currentLeft -= step; break;
+    }
+
+    const iframe = document.getElementById("main-iframe");
+    iframe.style.top = currentTop + "px";
+    iframe.style.left = currentLeft + "px";
 }
 
-function moveDown() {
-    currentTop -= step;
-    document.getElementById("main-iframe").style.top = currentTop + "px";
+function lockView() {
+    locked = true;
+
+    const iframe = document.getElementById("main-iframe");
+    iframe.style.pointerEvents = "auto"; 
+
+    alert(
+        "View Locked\n\n" +
+        "Final top: " + currentTop + "px\n" +
+        "Final left: " + currentLeft + "px\n\n" +
+        "You can now copy these values into CSS."
+    );
 }
 </script>
 
