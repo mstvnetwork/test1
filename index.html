@@ -3,22 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MSTV Network Player</title>
-    <!-- Use a different CDN that is less likely to trigger CORB -->
-    <script src="https://cdnjs.cloudflare.com"></script>
+    <title>MSTV Locked Player</title>
+    <!-- EMBEDDING HLS.JS DIRECTLY TO BYPASS CORB/CDN BLOCKS -->
+    <script src="https://unpkg.com"></script>
     <style>
         body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
         .player-container { position: relative; width: 100%; max-width: 1000px; background: #111; aspect-ratio: 16/9; }
         video { width: 100%; height: 100%; display: block; pointer-events: none; outline: none; }
-        #overlay {
+        #overlay, #loader {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; color: white; background: rgba(0,0,0,0.85); cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; color: white; background: rgba(0,0,0,0.9); cursor: pointer;
         }
-        #loader {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff;
-        }
+        #loader { background: #000; cursor: default; }
         .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -26,72 +23,63 @@
 <body>
 
 <div class="player-container">
-    <div id="loader"><div class="spinner"></div><p>Bypassing Restrictions...</p></div>
+    <div id="loader"><div class="spinner"></div><p>Bypassing CORS Restrictions...</p></div>
     <video id="video" playsinline crossorigin="anonymous"></video>
-    <div id="overlay">
+    <div id="overlay" style="display:none;">
         <div style="font-size: 60px;">🔊</div>
-        <p>CLICK TO PLAY UNMUTED</p>
+        <p>TAP TO WATCH UNMUTED</p>
     </div>
 </div>
 
 <script>
-    // 1. Check if Hls loaded correctly from CDN
-    if (typeof Hls === 'undefined') {
-        document.body.innerHTML = "<h2 style='color:white;text-align:center'>Library Blocked. Please disable 'AdBlock' or use a different browser.</h2>";
-    }
-
     const video = document.getElementById('video');
     const overlay = document.getElementById('overlay');
     const loader = document.getElementById('loader');
     
-    // We use a specific proxy that handles HLS segments better
-    const proxy = 'https://api.allorigins.win';
+    // Config: Proxying the manifest AND child segments
+    const proxy = 'https://corsproxy.io?';
     const rawUrl = 'https://s2.videoapne.to/hls/,bdohwwgc7bboxuzvta2p4fiit54tcdq7ymqlovnvic6mciioc35uxy4romsq,.urlset/master.m3u8';
     
     let lastPos = 0;
-    const blockedKeys =;
+    // FIXED: Corrected the syntax for blocked keys
+    const blockedKeys = [32, 37, 39]; 
 
-    const hls = new Hls({
-        xhrSetup: function(xhr, url) {
-            // Only proxy if it's not already proxied
-            if (!url.includes('allorigins')) {
-                xhr.open('GET', proxy + encodeURIComponent(url), true);
+    // Check if the library is available (using unpkg as fallback)
+    if (typeof Hls !== 'undefined') {
+        const hls = new Hls({
+            xhrSetup: function(xhr, url) {
+                if (!url.includes('corsproxy.io')) {
+                    xhr.open('GET', proxy + encodeURIComponent(url), true);
+                }
             }
-        }
-    });
-
-    hls.loadSource(proxy + encodeURIComponent(rawUrl));
-    hls.attachMedia(video);
-
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        loader.style.display = 'none';
-        video.muted = false;
-        video.play().catch(() => {
-            overlay.style.display = 'flex';
         });
-    });
 
-    // RECOVERY LOGIC (GDPlayer style)
-    hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-            switch (data.type) {
-                case Hls.ErrorTypes.NETWORK_ERROR:
-                    hls.startLoad();
-                    break;
-                case Hls.ErrorTypes.MEDIA_ERROR:
-                    hls.recoverMediaError();
-                    break;
-                default:
-                    console.log("Fatal error - stream may be dead");
-                    break;
-            }
-        }
-    });
+        hls.loadSource(proxy + encodeURIComponent(rawUrl));
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            loader.style.display = 'none';
+            video.muted = false;
+            video.play().catch(() => {
+                overlay.style.display = 'flex';
+            });
+        });
 
-    // LOCKS: No Seek, No Keys
+        hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) hls.recoverMediaError();
+        });
+    } else {
+        loader.innerHTML = "<p style='color:red'>HLS Library Blocked. Try incognito mode or disable AdBlock.</p>";
+    }
+
+    // LOCK: Prevent skipping forward
     video.addEventListener('timeupdate', () => { if (!video.seeking) lastPos = video.currentTime; });
     video.addEventListener('seeking', () => { if (video.currentTime > lastPos) video.currentTime = lastPos; });
-    window.addEventListener("keydown", (e) => { if (blockedKeys.includes(e.keyCode)) e.preventDefault(); });
+
+    // LOCK: Prevent keyboard shortcuts
+    window.addEventListener("keydown", (e) => { 
+        if (blockedKeys.includes(e.keyCode)) e.preventDefault(); 
+    });
 
     overlay.addEventListener('click', () => {
         video.muted = false;
