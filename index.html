@@ -1,28 +1,62 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="referrer" content="no-referrer">
-
     <title>Live Multi-Player</title>
     <style>
-        body { background: #111; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-        .controls { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
-        
-        select, button { padding: 10px; font-size: 14px; background: #333; color: white; border: 1px solid #555; border-radius: 5px; cursor: pointer; }
-        button:hover { background: #444; border-color: #e50914; }
+        body {
+            background: #111;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        .controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select, button {
+            padding: 10px;
+            font-size: 14px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover { 
+            background: #444; 
+            border-color: #e50914; 
+        }
 
         .player-window {
-            width: 800px; height: 500px; 
-            overflow: hidden; position: relative;
-            border: 2px solid #444; background: #000;
+            width: 800px;
+            height: 500px;
+            overflow: hidden; /* keeps only the visible area */
+            position: relative;
+            border: 2px solid #444;
+            background: #000;
         }
 
         #main-iframe {
-            position: absolute;
-            width: 1280px; height: 1200px;
-            transition: all 0.3s ease; /* Smooth transition when switching crops */
+            position: absolute; /* lets us move the iframe inside the container */
+            width: 1280px;      /* full page width */
+            height: 1200px;     /* full page height */
+            top: -430px;        /* adjust this value to align vertically */
+            left: -47px;        /* adjust this value to align horizontally */
+            transition: all 0.3s ease;
+            border: none;
         }
     </style>
 </head>
@@ -35,49 +69,62 @@
             <option value="https://tulnit.com/live/bollywood-colors/" data-top="-430" data-left="-47">Colors TV</option>
         </select>
 
-        <!-- The Reset Button -->
         <button onclick="updatePlayer()">🔄 Reload Stream</button>
+
+        <!-- Optional buttons to fine-tune alignment -->
+        <button onclick="moveIframe('up')">⬆️</button>
+        <button onclick="moveIframe('down')">⬇️</button>
+        <button onclick="moveIframe('left')">⬅️</button>
+        <button onclick="moveIframe('right')">➡️</button>
     </div>
 
     <div class="player-window">
-        <iframe id="main-iframe" src="https://tulnit.com" scrolling="allow" frameborder="0"></iframe>
+        <iframe id="main-iframe" src="https://tulnit.com" scrolling="no"></iframe>
     </div>
 
     <script>
+        // starting offsets
+        let currentTop = -430;
+        let currentLeft = -47;
+        const step = 10; // pixels to move per button press
+
         function updatePlayer() {
             const selector = document.getElementById('channel-select');
             const iframe = document.getElementById('main-iframe');
-            
-            // Get data from selected option
             const selectedOption = selector.options[selector.selectedIndex];
-            const newSrc = selectedOption.value;
-            const newTop = selectedOption.getAttribute('data-top');
-            const newLeft = selectedOption.getAttribute('data-left');
 
-            // 1. Force reload by clearing src first (prevents caching issues)
-            iframe.src = "about:blank";
-            
-            // 2. Set new source and crop position
+            // get new offsets from selected channel
+            const newTop = parseInt(selectedOption.getAttribute('data-top'));
+            const newLeft = parseInt(selectedOption.getAttribute('data-left'));
+
+            // update iframe source
+            iframe.src = "about:blank"; // force reload
             setTimeout(() => {
-                iframe.src = newSrc;
+                iframe.src = selectedOption.value;
                 iframe.style.top = newTop + "px";
                 iframe.style.left = newLeft + "px";
+
+                // update current offsets for manual nudging
+                currentTop = newTop;
+                currentLeft = newLeft;
             }, 10);
         }
 
-        // Initial setup on page load
+        function moveIframe(direction) {
+            const iframe = document.getElementById('main-iframe');
+            switch(direction) {
+                case 'up':    currentTop += step; break;
+                case 'down':  currentTop -= step; break;
+                case 'left':  currentLeft += step; break;
+                case 'right': currentLeft -= step; break;
+            }
+            iframe.style.top = currentTop + "px";
+            iframe.style.left = currentLeft + "px";
+        }
+
+        // initialize on page load
         window.onload = updatePlayer;
     </script>
 
 </body>
 </html>
-
-
-
-
-
-https://d1g8wgjurz8via.cloudfront.net/bpk-tv/Zeetv/default/main.mpd?
-https://d1g8wgjurz8via.cloudfront.net/bpk-tv/Zeetv/default/main.mpd?
-https://tulnit.com/cdn-cgi/rum?
-
-https://d1g8wgjurz8via.cloudfront.net/bpk-tv/Zeetv/default/dash/Zeetv-video=1087600-1063040097743.dash
