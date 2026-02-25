@@ -3,28 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDPlayer Clone - MSTV Network</title>
-    <script src="https://cdn.jsdelivr.net"></script>
+    <title>MSTV Network Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
-        .player-container { position: relative; width: 100%; max-width: 1000px; background: #000; }
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .player-container { position: relative; width: 100%; max-width: 900px; }
         video { width: 100%; height: auto; display: block; pointer-events: none; }
         #unmuteOverlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); color: white;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; z-index: 100;
+            background: rgba(0,0,0,0.8); color: #fff; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; font-family: sans-serif;
         }
-        .icon { font-size: 80px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="player-container">
-    <video id="video" playsinline crossorigin="anonymous"></video>
+    <video id="video" playsinline></video>
     <div id="unmuteOverlay">
-        <div class="icon">🔊</div>
-        <p>TAP TO UNMUTE</p>
+        <div style="font-size: 50px;">🔊</div>
+        <p>TAP TO PLAY UNMUTED</p>
     </div>
 </div>
 
@@ -32,44 +31,39 @@
     const video = document.getElementById('video');
     const overlay = document.getElementById('unmuteOverlay');
     
-    // 1. Using a CORS proxy to bypass provider restrictions
-    const originalUrl = 'https://s2.videoapne.to/hls/,bdohwwgc7bboxuzvta2p4fiit54tcdq7ymqlovnvic6mciioc35uxy4romsq,.urlset/master.m3u8';
-    const m3u8Url = 'https://corsproxy.io/?' + encodeURIComponent(originalUrl);
+    // GDPLAYER URL (Proxied to bypass GitHub Pages CORS limits)
+    const rawUrl = 'https://s2.videoapne.to/hls/,bdohwwgc7bboxuzvta2p4fiit54tcdq7ymqlovnvic6mciioc35uxy4romsq,.urlset/master.m3u8';
+    const proxiedUrl = 'https://corsproxy.io?' + encodeURIComponent(rawUrl);
 
     let lastPos = 0;
-    const blockedKeys = [32, 37, 39]; // Fix: Explicitly define Space, Left, Right
+    const blockedKeys = [32, 37, 39]; // Space, Left, Right
 
-    // 2. Initialize HLS
     if (Hls.isSupported()) {
         const hls = new Hls({
-            // Optional: Add custom headers if the host requires specific Referers
-            xhrSetup: function(xhr) { xhr.withCredentials = false; }
+            // Force hls.js to handle child segments through the proxy
+            xhrSetup: function(xhr, url) {
+                if (url.includes('videoapne.to')) {
+                    xhr.open('GET', 'https://corsproxy.io?' + encodeURIComponent(url), true);
+                }
+            }
         });
-        hls.loadSource(m3u8Url);
+        hls.loadSource(proxiedUrl);
         hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => attemptAutoplay());
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = m3u8Url;
-        video.addEventListener('loadedmetadata', () => attemptAutoplay());
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.muted = false;
+            video.play().catch(() => overlay.style.display = 'flex');
+        });
+        
+        // Error Recovery (Important for black screen issues)
+        hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) hls.recoverMediaError();
+        });
     }
 
-    // 3. Lock Seeking (Forward skip prevention)
-    video.addEventListener('timeupdate', () => { 
-        if (!video.seeking) lastPos = video.currentTime; 
-    });
-    video.addEventListener('seeking', () => { 
-        if (video.currentTime > lastPos) video.currentTime = lastPos; 
-    });
-
-    // 4. Block Keyboard Shortcuts
-    window.addEventListener("keydown", (e) => {
-        if (blockedKeys.includes(e.keyCode)) e.preventDefault();
-    });
-
-    function attemptAutoplay() {
-        video.muted = false;
-        video.play().catch(() => { overlay.style.display = 'flex'; });
-    }
+    // Lock Seek bar & Keyboard
+    video.addEventListener('timeupdate', () => { if (!video.seeking) lastPos = video.currentTime; });
+    video.addEventListener('seeking', () => { if (video.currentTime > lastPos) video.currentTime = lastPos; });
+    window.addEventListener("keydown", (e) => { if (blockedKeys.includes(e.keyCode)) e.preventDefault(); });
 
     overlay.addEventListener('click', () => {
         video.muted = false;
@@ -79,3 +73,4 @@
 </script>
 </body>
 </html>
+
