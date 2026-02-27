@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Star Gold Test - MSTV</title>
-    <!-- Mux.js is absolutely required for HLS (.m3u8) support in Shaka -->
-    <script src="https://cdnjs.cloudflare.com"></script>
-    <script src="shaka.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; text-align: center; }
-        video { width: 100%; max-width: 800px; background: #111; margin-top: 20px; display: block; }
+        #video-container { position: relative; display: inline-block; width: 100%; max-width: 800px; }
+        video { width: 100%; background: #111; display: block; }
         #log { color: #00ffA0; margin-top: 10px; font-size: 14px; }
 
         /* Spinner styling */
@@ -30,12 +29,6 @@
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
-
-        /* Make container relative to position spinner */
-        #video-container {
-            position: relative;
-            display: inline-block;
-        }
     </style>
 </head>
 <body>
@@ -54,8 +47,14 @@
             const video = document.getElementById('video');
             const spinner = document.getElementById('spinner');
 
+            // Hide spinner as soon as first frame is ready
+            const hideSpinner = () => { spinner.style.display = 'none'; };
+            video.addEventListener('loadeddata', hideSpinner);
+            video.addEventListener('canplay', hideSpinner);
+            video.addEventListener('error', hideSpinner);
+
             if (typeof shaka === 'undefined') {
-                log.innerText = "ERROR: shaka.js not found in this folder!";
+                log.innerText = "ERROR: shaka.js not loaded!";
                 spinner.style.display = 'none';
                 return;
             }
@@ -66,11 +65,6 @@
             player.addEventListener('error', (event) => {
                 log.innerText = "PLAYBACK ERROR: Code " + event.detail.code;
                 console.error("Shaka Error Detail:", event.detail);
-                spinner.style.display = 'none';
-            });
-
-            // Hide spinner when video actually starts playing
-            video.addEventListener('playing', () => {
                 spinner.style.display = 'none';
             });
 
