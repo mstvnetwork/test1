@@ -1,126 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Adjustable Split Player</title>
-
-<style>
-body {
-    background: #111;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-family: sans-serif;
-}
-
-/* Controls */
-.controls {
-    margin: 15px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-button {
-    padding: 8px 14px;
-    background: #333;
-    color: #fff;
-    border: 1px solid #555;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #444;
-}
-
-/* Top section */
-.top-view {
-    width: 800px;
-    height: 400px;
-    overflow: hidden;
-    border: 2px solid #444;
-    border-bottom: none;
-}
-
-/* Bottom tube section */
-.bottom-view {
-    width: 800px;
-    height: 100px;
-    overflow: hidden;
-    border: 2px solid #444;
-    border-top: none;
-}
-
-/* Shared iframe */
-#main-iframe {
-    position: relative;
-    width: 1280px;
-    height: 1400px;
-    top: -150px;     /* initial vertical offset */
-    left: -47px;     /* initial horizontal offset */
-    border: none;
-    pointer-events: auto;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSTV Player</title>
+    <!-- 1. Mux.js is REQUIRED for HLS playback in Shaka -->
+    <script src="https://cdnjs.cloudflare.com"></script>
+    <!-- 2. Your local Shaka Player library -->
+    <script src="shaka.js"></script>
+    
+    <style>
+        body, html { margin: 0; padding: 0; background: #000; height: 100%; overflow: hidden; }
+        #video { width: 100%; height: 100%; background: #000; }
+        #status-overlay { 
+            position: absolute; top: 10px; left: 10px; color: #00ffA0; 
+            font-family: sans-serif; font-size: 14px; z-index: 10;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="controls">
-    <button onclick="move('up')">⬆️</button>
-    <button onclick="move('down')">⬇️</button>
-    <button onclick="move('left')">⬅️</button>
-    <button onclick="move('right')">➡️</button>
-    <button onclick="lockView()">🔒 Lock View</button>
-</div>
+    <div id="status-overlay">MSTV | Loading...</div>
+    <video id="video" autoplay controls crossorigin="anonymous"></video>
 
-<div class="top-view">
-    <iframe id="main-iframe"
-        src="https://tulnit.com/live/bollywood-colors/"
-        scrolling="no">
-    </iframe>
-</div>
+    <script>
+        const channels = {
+            "1": {
+                name: "Zee TV",
+                url: "https://d1g8wgjurz8via.cloudfront.net",
+                type: "shaka",
+                drm: { 'ed068cf84f0640ccbc7c0e395c0a272e': 'bb722190f2bb446391020411a7d0828b' }
+            },
+            "2": {
+                name: "Willow Cricket 2",
+                url: "https://restream-live.realiptv.to",
+                type: "hls"
+            },
+            "3": {
+                name: "Deewana HD",
+                url: "https://live20.bozztv.com",
+                type: "shaka"
+            },
+            "4": {
+                name: "Sky Sports",
+                url: "https://nl1.rocketdns.info",
+                type: "shaka"
+            },
+            "5": {
+                name: "Star Gold",
+                url: "https://anywhere.pwisetthon.com",
+                type: "shaka"
+            },
+            "6": {
+                name: "Zindgi Tv (Pak)",
+                url: "https://5ad386ff92705.streamlock.net",
+                type: "shaka"
+            }
+        };
 
-<div class="bottom-view">
-    <!-- Same iframe visually continues downward -->
-</div>
+        let player;
 
-<script>
-let currentTop = -150;
-let currentLeft = -47;
-let locked = false;
-const step = 10;
+        async function initApp() {
+            shaka.polyfill.installAll(); //
+            if (!shaka.Player.isBrowserSupported()) {
+                return alert("Browser not supported!");
+            }
 
-function move(direction) {
-    if (locked) return;
+            const video = document.getElementById('video');
+            player = new shaka.Player(video);
 
-    switch(direction) {
-        case 'up': currentTop += step; break;
-        case 'down': currentTop -= step; break;
-        case 'left': currentLeft += step; break;
-        case 'right': currentLeft -= step; break;
-    }
+            // CONDITIONAL HEADERS: Only apply Zee5 headers to Zee5 links
+            player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                if (request.uris.some(u => u.includes('cloudfront.net'))) {
+                    request.headers['Origin'] = 'https://www.zee5.com';
+                    request.headers['Referer'] = 'https://www.zee5.com';
+                }
+            });
 
-    const iframe = document.getElementById("main-iframe");
-    iframe.style.top = currentTop + "px";
-    iframe.style.left = currentLeft + "px";
-}
+            // Listen for errors
+            player.addEventListener('error', (event) => console.error('Shaka Error:', event.detail));
 
-function lockView() {
-    locked = true;
+            const query = window.location.search.substring(1);
+            const chId = query || "1"; 
+            loadChannel(chId);
+        }
 
-    const iframe = document.getElementById("main-iframe");
-    iframe.style.pointerEvents = "auto"; 
+        async function loadChannel(id) {
+            const ch = channels[id];
+            const status = document.getElementById('status-overlay');
 
-    alert(
-        "View Locked\n\n" +
-        "Final top: " + currentTop + "px\n" +
-        "Final left: " + currentLeft + "px\n\n" +
-        "You can now copy these values into CSS."
-    );
-}
-</script>
+            if (!ch) {
+                status.innerText = "Error: Channel " + id + " not found.";
+                return;
+            }
 
+            status.innerText = "MSTV | " + ch.name;
+            await player.unload(); //
+
+            // Configure DRM if keys are present
+            player.resetConfiguration();
+            if (ch.drm) {
+                player.configure({ drm: { clearKeys: ch.drm } });
+            }
+
+            try {
+                await player.load(ch.url); //
+            } catch (e) {
+                status.innerText = "Playback Error: " + e.code;
+                console.error("Load Error:", e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
 </body>
 </html>
